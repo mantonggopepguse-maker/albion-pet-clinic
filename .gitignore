@@ -1,0 +1,15 @@
+node_modules/
+dist/
+server/dist/
+.env
+*.log
+.DS_Store
+Thumbs.db
+server/uploads/receipts/*
+!server/uploads/receipts/.gitkeep
+coverage/
+.turbo/
+
+# dev server stdout/stderr capture
+dev-*.txt
+*.tsbuildinfo

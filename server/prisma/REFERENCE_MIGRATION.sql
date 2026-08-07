@@ -1,0 +1,59 @@
+-- REFERENCE MIGRATION: Add Payment Verification, Cash Reconciliation, Stock Movement
+-- 
+-- This file documents the schema changes applied to the Prisma schema.
+-- Run `npx prisma migrate dev` to generate proper Prisma migrations
+-- from the current schema.prisma state instead of using this file directly.
+--
+-- Models added:
+--   1. StockMovement (tracks inventory quantity changes)
+--   2. CashReconciliation (tracks till cash against POS)
+--
+-- Model modified:
+--   1. Payment — added receiptUrl, status, verifiedBy, verifiedAt, rejectionReason
+--   2. InventoryItem — added movements relation (opposite of StockMovement.item)
+--   3. Clinic — added stockMovements and cashReconciliations relations
+
+-- === Payment changes ===
+-- ALTER TABLE payments ADD COLUMN receiptUrl TEXT;
+-- ALTER TABLE payments ADD COLUMN status TEXT NOT NULL DEFAULT 'completed';
+-- ALTER TABLE payments ADD COLUMN verifiedBy TEXT;
+-- ALTER TABLE payments ADD COLUMN verifiedAt TIMESTAMP(3);
+-- ALTER TABLE payments ADD COLUMN rejectionReason TEXT;
+-- CREATE INDEX ON payments(status);
+
+-- === StockMovement (new table) ===
+-- CREATE TABLE stock_movements (
+--   id TEXT PRIMARY KEY,
+--   clinicId TEXT NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
+--   itemId TEXT NOT NULL REFERENCES inventory_items(id) ON DELETE CASCADE,
+--   type TEXT NOT NULL,
+--   quantity INTEGER NOT NULL,
+--   balanceAfter INTEGER NOT NULL,
+--   reference TEXT,
+--   note TEXT,
+--   userId TEXT,
+--   createdAt TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+-- );
+-- CREATE INDEX ON stock_movements(itemId, createdAt);
+-- CREATE INDEX ON stock_movements(clinicId, createdAt);
+-- CREATE INDEX ON stock_movements(type);
+
+-- === CashReconciliation (new table) ===
+-- CREATE TABLE cash_reconciliations (
+--   id TEXT PRIMARY KEY,
+--   clinicId TEXT NOT NULL REFERENCES clinics(id) ON DELETE CASCADE,
+--   recordedBy TEXT NOT NULL,
+--   amount FLOAT NOT NULL,
+--   method TEXT NOT NULL DEFAULT 'Cash',
+--   source TEXT NOT NULL DEFAULT 'sales',
+--   status TEXT NOT NULL DEFAULT 'pending',
+--   notes TEXT,
+--   reconciledBy TEXT,
+--   reconciledAt TIMESTAMP(3),
+--   saleId TEXT,
+--   date TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+--   createdAt TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+--   updatedAt TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+-- );
+-- CREATE INDEX ON cash_reconciliations(clinicId, status);
+-- CREATE INDEX ON cash_reconciliations(clinicId, date);

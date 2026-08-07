@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Install backend dependencies
+        run: cd server && npm ci
+
+      - name: Build frontend
+        run: npx vite build
+
+      - name: Type-check backend
+        run: cd server && npx tsc --noEmit
+
+      - name: Run frontend tests
+        run: npx vitest run --reporter=verbose
+
+      - name: Run backend tests
+        run: cd server && npx vitest run --reporter=verbose
