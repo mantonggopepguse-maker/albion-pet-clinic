@@ -60,79 +60,77 @@ export const InventoryList: React.FC<InventoryListProps> = ({ items, settings, o
 
     return (
         <div className="space-y-8 animate-fade-in pb-32">
-            <div className="flex flex-col lg:flex-row gap-8 justify-between items-start lg:items-center">
+            <div className="flex flex-col lg:flex-row gap-6 justify-between items-start lg:items-center">
                 <div className="w-full lg:w-auto">
                     <div className="flex items-center gap-3 mb-2">
-                        <div className="w-12 h-12 rounded-2xl bg-[#FFFBEB] flex items-center justify-center text-[#14B8A6] border border-[#14B8A6]/20 shadow-inner">
-                            <Box className="w-6 h-6" />
+                        <div className="w-10 h-10 rounded-2xl bg-amber-500/15 flex items-center justify-center text-amber-600 border border-amber-500/30 shadow-inner">
+                            <Box className="w-5 h-5" />
                         </div>
                         <div>
-                            <h1 className="text-3xl font-black text-slate-800 tracking-tight">Inventory</h1>
-                            <p className="text-sm text-slate-500 font-semibold">Manage your stock and supplies.</p>
+                            <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">Inventory</h1>
+                            <p className="text-sm text-slate-500 font-medium">Manage clinic stock, pharmaceuticals, and supplies.</p>
                         </div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-2">
                         {lowStockCount > 0 && (
                             <button
                                 onClick={() => setFilterLowStock(!filterLowStock)}
-                                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 border ${filterLowStock ? 'bg-rose-500 text-white shadow-lg shadow-rose-200 border-transparent' : 'bg-white/40 backdrop-blur-md text-rose-500 border-rose-100 hover:bg-rose-50'}`}
+                                className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 border ${filterLowStock ? 'bg-rose-600 text-white shadow-md border-transparent' : 'bg-rose-500/10 text-rose-600 border-rose-500/20 hover:bg-rose-500/20'}`}
                             >
                                 <AlertTriangle className="w-3.5 h-3.5" />
                                 {lowStockCount} Low stock items
                             </button>
                         )}
-                        <div className="px-4 py-2 rounded-xl bg-white/40 backdrop-blur-md border border-slate-100 text-xs font-bold text-slate-500">
+                        <div className="px-3 py-1.5 rounded-xl bg-white/60 backdrop-blur-md border border-slate-200 text-xs font-bold text-slate-600">
                             {items.length} items
                         </div>
                     </div>
                 </div>
-                <div className="flex flex-col md:flex-row items-center gap-4 w-full lg:w-auto">
-                    <div className="flex bg-white/40 backdrop-blur-xl p-1.5 rounded-2xl border border-white/60 shadow-xl ring-1 ring-white/20 w-full md:w-auto">
+                <div className="flex flex-col md:flex-row items-center gap-3 w-full lg:w-auto">
+                    <div className="flex bg-white/60 backdrop-blur-xl p-1 rounded-xl border border-slate-200 shadow-sm w-full md:w-auto">
                         <button
                             onClick={() => setViewMode('table')}
-                            className={`flex-1 md:w-12 md:h-12 flex items-center justify-center rounded-xl transition-all ${viewMode === 'table' ? 'bg-[#14B8A6] text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
+                            className={`flex-1 md:w-10 md:h-10 flex items-center justify-center rounded-lg transition-all ${viewMode === 'table' ? 'bg-navy-900 text-amber-400 shadow-md border border-amber-500/30' : 'text-slate-500 hover:text-slate-800'}`}
                         >
-                            <List className="w-5 h-5" />
+                            <List className="w-4 h-4" />
                         </button>
                         <button
                             onClick={() => setViewMode('grid')}
-                            className={`flex-1 md:w-12 md:h-12 flex items-center justify-center rounded-xl transition-all ${viewMode === 'grid' ? 'bg-[#14B8A6] text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
+                            className={`flex-1 md:w-10 md:h-10 flex items-center justify-center rounded-lg transition-all ${viewMode === 'grid' ? 'bg-navy-900 text-amber-400 shadow-md border border-amber-500/30' : 'text-slate-500 hover:text-slate-800'}`}
                         >
-                            <LayoutGrid className="w-5 h-5" />
+                            <LayoutGrid className="w-4 h-4" />
                         </button>
                     </div>
                     <div className="relative w-full lg:w-72">
-                        <Search className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors w-4.5 h-4.5 ${searchTerm ? 'text-[#14B8A6]' : 'text-slate-400'}`} />
+                        <Search className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors w-4 h-4 ${searchTerm ? 'text-amber-600' : 'text-slate-400'}`} />
                         <input
                             type="text"
                             placeholder="Search items"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-white/40 backdrop-blur-xl border border-white/60 rounded-2xl py-4 pl-12 pr-12 text-sm font-semibold text-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-[#14B8A6]/20 focus:border-[#14B8A6]/40 outline-none transition-all shadow-xl ring-1 ring-white/20"
+                            className="w-full bg-white/80 backdrop-blur-xl border border-slate-200 rounded-xl py-3 pl-11 pr-10 text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-400 outline-none transition-all"
                         />
                         {searchTerm && (
                             <button
                                 onClick={() => setSearchTerm('')}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-[#14B8A6] transition-colors"
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-amber-600 transition-colors"
                             >
                                 <X className="w-4 h-4" />
                             </button>
                         )}
                     </div>
-                    <div className="flex gap-2 w-full md:w-auto">
-                        <button
-                            onClick={onAddItem}
-                            className="flex-1 md:flex-none btn-luminous btn-luminous-emerald text-[10px] uppercase tracking-widest px-8"
-                        >
-                            <Plus className="w-4 h-4" /> Add item
-                        </button>
-                        <button
-                            onClick={() => window.dispatchEvent(new CustomEvent('app-navigate', { detail: { view: 'AI_HUB', tab: 'OPERATIONS' } }))}
-                            className="flex-1 md:flex-none btn-luminous btn-luminous-emerald text-[10px] uppercase tracking-widest px-8"
-                        >
-                            <Zap className="w-4 h-4" /> AI help
-                        </button>
-                    </div>
+                    <button
+                        onClick={onAddItem}
+                        className="w-full md:w-auto px-5 py-3 rounded-xl bg-amber-500 text-navy-950 font-extrabold hover:bg-amber-400 border border-amber-400 shadow-md transition-all flex items-center justify-center gap-2 text-sm"
+                    >
+                        <Plus className="w-4 h-4" /> Add Item
+                    </button>
+                    <button
+                        onClick={() => window.dispatchEvent(new CustomEvent('app-navigate', { detail: { view: 'AI_HUB', tab: 'OPERATIONS' } }))}
+                        className="w-full md:w-auto px-4 py-3 rounded-xl bg-navy-900 text-amber-400 font-extrabold hover:bg-navy-800 border border-amber-500/30 shadow-md transition-all flex items-center justify-center gap-2 text-xs"
+                    >
+                        <Zap className="w-4 h-4" /> AI help
+                    </button>
                 </div>
             </div>
 

@@ -45,7 +45,13 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
             return res.status(404).json({ error: 'Clinic not found' });
         }
 
-        res.json(clinic);
+        const rawSym = clinic.currencySymbol || '₦';
+        const cleanSym = (!rawSym || rawSym === 'â‚¦' || rawSym === '?' || rawSym.includes('â')) ? '₦' : rawSym;
+
+        res.json({
+            ...clinic,
+            currencySymbol: cleanSym
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Failed to fetch settings' });

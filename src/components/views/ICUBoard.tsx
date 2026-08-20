@@ -190,30 +190,30 @@ export const ICUBoard: React.FC<ICUBoardProps> = ({ settings, currentUser, onNav
   }
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      <div className="flex flex-col md:flex-row justify-between items-end gap-6 mb-10">
+    <div className="space-y-8 animate-fade-in pb-20">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
         <div>
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-14 h-14 rounded-2xl bg-white border border-[#F0FFF4] shadow-2xl flex items-center justify-center text-rose-500 animate-pulse-subtle">
-              <HeartPulse className="w-8 h-8" />
+          <div className="flex items-center gap-3.5 mb-2">
+            <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white border border-[#F0FFF4] shadow-2xl flex items-center justify-center text-rose-500 animate-pulse-subtle flex-shrink-0">
+              <HeartPulse className="w-6 h-6 md:w-8 md:h-8" />
             </div>
             <div>
-              <h1 className="text-5xl font-black text-slate-800 tracking-tighter uppercase leading-none">Clinical Core</h1>
-              <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.3em] mt-3">ICU Monitoring & Critical Care Protocol</p>
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-800 tracking-tighter uppercase leading-none">Clinical Core</h1>
+              <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.25em] mt-2">ICU Monitoring & Critical Care Protocol</p>
             </div>
           </div>
         </div>
         
-        <div className="bg-white/40 backdrop-blur-xl p-2 rounded-2xl border border-white/60 shadow-xl flex gap-1">
+        <div className="w-full sm:w-auto bg-white/40 backdrop-blur-xl p-1.5 rounded-2xl border border-white/60 shadow-xl flex gap-1">
           <button 
             onClick={() => setViewMode('KENNELS')}
-            className={`px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all duration-500 ${viewMode === 'KENNELS' ? 'bg-white text-slate-900 shadow-xl border border-slate-100' : 'text-slate-400 hover:text-slate-600'}`}
+            className={`flex-1 sm:flex-none px-5 sm:px-8 py-2.5 sm:py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all duration-500 text-center ${viewMode === 'KENNELS' ? 'bg-white text-slate-900 shadow-xl border border-slate-100' : 'text-slate-400 hover:text-slate-600'}`}
           >
             Tactical Grid
           </button>
           <button 
             onClick={() => setViewMode('ROUNDS')}
-            className={`px-8 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all duration-500 ${viewMode === 'ROUNDS' ? 'bg-white text-slate-900 shadow-xl border border-slate-100' : 'text-slate-400 hover:text-slate-600'}`}
+            className={`flex-1 sm:flex-none px-5 sm:px-8 py-2.5 sm:py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all duration-500 text-center ${viewMode === 'ROUNDS' ? 'bg-white text-slate-900 shadow-xl border border-slate-100' : 'text-slate-400 hover:text-slate-600'}`}
           >
             Rounds Ledger
           </button>

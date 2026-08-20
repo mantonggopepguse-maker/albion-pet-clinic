@@ -234,7 +234,7 @@ export const Pos: React.FC<PosProps> = ({ inventory, settings, clients, invoiceC
                         </div>
                         <button
                             onClick={() => setIsScanning(true)}
-                            className="w-12 h-12 md:w-14 md:h-14 bg-[#14B8A6] text-white rounded-xl flex items-center justify-center shadow-lg active:scale-95 transition-all flex-shrink-0"
+                            className="w-12 h-12 md:w-14 md:h-14 bg-amber-500 text-navy-950 rounded-xl flex items-center justify-center shadow-md active:scale-95 transition-all flex-shrink-0 border border-amber-400 font-extrabold hover:bg-amber-400"
                         >
                             <ScanLine className="w-5 h-5 md:w-6 md:h-6" />
                         </button>

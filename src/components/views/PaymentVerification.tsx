@@ -91,15 +91,14 @@ const PaymentRow: React.FC<{
                         </button>
                     )}
                     {payment.receiptUrl && (
-                        <a
-                            href={payment.receiptUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                        <button
+                            onClick={() => api.payments.openReceipt(payment.id)
+                                .catch((err) => toast.error(err?.message || 'Failed to load receipt'))}
                             className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
                             title="View receipt"
                         >
                             <Eye size={18} />
-                        </a>
+                        </button>
                     )}
                     <button
                         onClick={() => onVerify(payment.id)}

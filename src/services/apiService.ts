@@ -1012,6 +1012,37 @@ export const api = {
                 body: formData,
             }).then(handleResponse);
         },
+        openReceipt: async (paymentId: string): Promise<void> => {
+            const receiptWindow = window.open('about:blank', '_blank');
+            if (receiptWindow) receiptWindow.opener = null;
+
+            try {
+                const response = await fetch(`${API_URL}/payments/${paymentId}/receipt`, {
+                    headers: getAuthHeaders(),
+                });
+
+                if (!response.ok) {
+                    const body = await response.json().catch(() => ({ error: 'Failed to load receipt' }));
+                    throw new Error(body.error || 'Failed to load receipt');
+                }
+
+                const objectUrl = URL.createObjectURL(await response.blob());
+                if (receiptWindow) {
+                    receiptWindow.location.replace(objectUrl);
+                } else {
+                    const link = document.createElement('a');
+                    link.href = objectUrl;
+                    link.target = '_blank';
+                    link.rel = 'noopener noreferrer';
+                    link.click();
+                }
+
+                window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+            } catch (error) {
+                receiptWindow?.close();
+                throw error;
+            }
+        },
         getClientBalance: (clientId: string): Promise<any> =>
             fetch(`${API_URL}/payments/client-balance/${clientId}`, { headers: getAuthHeaders() }).then(handleResponse),
     },

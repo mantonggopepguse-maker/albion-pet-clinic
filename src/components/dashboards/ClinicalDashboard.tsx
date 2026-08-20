@@ -53,10 +53,6 @@ export const ClinicalDashboard: React.FC<ClinicalDashboardProps> = ({
         return "Good Evening";
     };
 
-    if (loading) {
-        return <PageLoader />;
-    }
-
     return (
         <div className="space-y-10 animate-fade-in pb-20 relative max-w-7xl mx-auto px-4 md:px-0">
             {/* Header & Greetings */}
@@ -82,10 +78,10 @@ export const ClinicalDashboard: React.FC<ClinicalDashboardProps> = ({
             <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4">
                 <div className="stat-widget stat-widget-teal">
                     <div className="stat-kicker">Triage queue</div>
-                    <div className="stat-value mt-3">{stats.triageQueue?.length || 0}</div>
-                    <div className="mt-5 flex gap-2">
+                    <div className="stat-value mt-2">{stats.triageQueue?.length || 0}</div>
+                    <div className="mt-4 flex gap-1.5">
                         {Array.from({ length: 5 }).map((_, index) => (
-                            <div key={index} className={`h-9 flex-1 rounded-[0.9rem] ${index < Math.min(stats.triageQueue?.length || 0, 5) ? 'bg-white/22' : 'bg-black/10'}`}></div>
+                            <div key={index} className={`h-6 flex-1 rounded-[0.7rem] ${index < Math.min(stats.triageQueue?.length || 0, 5) ? 'bg-amber-500 shadow-sm' : 'bg-slate-100'}`}></div>
                         ))}
                     </div>
                     <div className="stat-footer">
@@ -95,12 +91,12 @@ export const ClinicalDashboard: React.FC<ClinicalDashboardProps> = ({
                 </div>
                 <div className="stat-widget stat-widget-blue">
                     <div className="stat-kicker">Ward occupancy</div>
-                    <div className="mt-3 flex items-end justify-between">
+                    <div className="mt-2 flex items-end justify-between">
                         <div className="stat-value">{Math.round((stats.hospitalization?.occupiedKennels / stats.hospitalization?.totalKennels) * 100) || 0}%</div>
-                        <div className="text-lg font-bold text-white/82">{stats.hospitalization?.occupiedKennels || 0}/{stats.hospitalization?.totalKennels || 0}</div>
+                        <div className="text-xs font-extrabold text-slate-500">{stats.hospitalization?.occupiedKennels || 0}/{stats.hospitalization?.totalKennels || 0} kennels</div>
                     </div>
-                    <div className="mt-6 h-3 rounded-full bg-white/20 overflow-hidden">
-                        <div className="h-full rounded-full bg-white/90" style={{ width: `${Math.round((stats.hospitalization?.occupiedKennels / stats.hospitalization?.totalKennels) * 100) || 0}%` }}></div>
+                    <div className="mt-4 h-2.5 rounded-full bg-slate-100 border border-slate-200 overflow-hidden">
+                        <div className="h-full rounded-full bg-amber-500" style={{ width: `${Math.round((stats.hospitalization?.occupiedKennels / stats.hospitalization?.totalKennels) * 100) || 0}%` }}></div>
                     </div>
                     <div className="stat-footer">
                         <span>ICU beds</span>
@@ -109,8 +105,10 @@ export const ClinicalDashboard: React.FC<ClinicalDashboardProps> = ({
                 </div>
                 <div className="stat-widget stat-widget-rose">
                     <div className="stat-kicker">Active treatments</div>
-                    <div className="stat-value mt-3">{stats.ongoingTreatments?.length || 0}</div>
-                    <div className="mt-5 text-lg font-bold text-white/88">Well Above</div>
+                    <div className="stat-value mt-2">{stats.ongoingTreatments?.length || 0}</div>
+                    <div className="mt-4 text-xs font-extrabold text-emerald-600 flex items-center gap-1">
+                        <Activity className="w-3.5 h-3.5" /> Care in progress
+                    </div>
                     <div className="stat-footer">
                         <span>Case load</span>
                         <span>7 days</span>
@@ -118,14 +116,14 @@ export const ClinicalDashboard: React.FC<ClinicalDashboardProps> = ({
                 </div>
                 <div className="stat-widget stat-widget-purple">
                     <div className="stat-kicker">Appointments</div>
-                    <div className="stat-value mt-3">{stats.upcomingAppointments?.length || 0}</div>
-                    <div className="mt-5 flex items-end gap-2">
-                        <div className="h-6 w-8 rounded-full bg-white/20"></div>
-                        <div className="h-8 w-10 rounded-full bg-white/26"></div>
-                        <div className="h-10 w-12 rounded-full bg-white/35"></div>
+                    <div className="stat-value mt-2">{stats.upcomingAppointments?.length || 0}</div>
+                    <div className="mt-4 flex gap-1">
+                        {Array.from({ length: 4 }).map((_, index) => (
+                            <div key={index} className={`h-6 flex-1 rounded-[0.7rem] ${index < Math.min(stats.upcomingAppointments?.length || 0, 4) ? 'bg-amber-500 shadow-sm' : 'bg-slate-100'}`}></div>
+                        ))}
                     </div>
                     <div className="stat-footer">
-                        <span>Schedule</span>
+                        <span>Upcoming</span>
                         <span>Today</span>
                     </div>
                 </div>

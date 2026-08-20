@@ -36,8 +36,9 @@ gcloud artifacts repositories create albion-pet-clinic \
 
 ### Backend (`server/.env`)
 ```
-DATABASE_URL=postgresql://user:password@host:5432/albion_pet_clinic
-DIRECT_URL=postgresql://user:password@host:5432/albion_pet_clinic
+# Cost-Optimized Session Pooler Connection (Supabase IPv4)
+DATABASE_URL=postgresql://postgres.knabfxzouliunawxirdh:<DB_PASSWORD>@aws-0-eu-west-1.pooler.supabase.com:5432/postgres?schema=pet_clinic
+DIRECT_URL=postgresql://postgres.knabfxzouliunawxirdh:<DB_PASSWORD>@aws-0-eu-west-1.pooler.supabase.com:5432/postgres?schema=pet_clinic
 JWT_SECRET=<random-64-char-string>
 PORT=8080
 NODE_ENV=production

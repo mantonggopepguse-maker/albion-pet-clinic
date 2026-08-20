@@ -1,57 +1,67 @@
-import React, { useState, useEffect } from 'react';
+import React, { lazy, Suspense, useState, useEffect } from 'react';
 import { Layout } from './components/shared/Layout';
 import { ErrorBoundary } from './components/shared/ErrorBoundary';
-import { InventoryList } from './components/views/InventoryList';
-import { AddItemForm } from './components/forms/AddItemForm';
-import { Pos } from './components/views/Pos';
-import { Settings } from './components/views/Settings';
-import { Dashboard } from './components/views/Dashboard';
 import { Auth } from './components/views/Auth';
-import { ClientList } from './components/views/ClientList';
-import { AddClientForm } from './components/forms/AddClientForm';
-import { PatientList } from './components/views/PatientList';
-import { AddPatientForm } from './components/forms/AddPatientForm';
-import { Treatment } from './components/views/Treatment';
-import { ProcedureManagement } from './components/views/ProcedureManagement';
-import { Appointment } from './components/views/Appointment';
-import { StaffManagement } from './components/views/StaffManagement';
-import { AuditLog } from './components/views/AuditLog';
-import { SuperAdminDashboard } from './components/views/SuperAdminDashboard';
-import { ClinicDetails } from './components/views/ClinicDetails';
-import { ClientDetails } from './components/views/ClientDetails';
-import { PatientDetails } from './components/views/PatientDetails';
-import { TransactionHistory } from './components/views/TransactionHistory';
-import { FreeInvoice } from './components/views/FreeInvoice';
-import { Expenses } from './components/views/Expenses';
-import { AddExpenseForm } from './components/forms/AddExpenseForm';
-import { ProfitLossReport } from './components/views/ProfitLossReport';
-import { ReminderList } from './components/views/ReminderList';
-import { AIHub } from './components/views/AIHub';
-import { ICUBoard } from './components/views/ICUBoard';
-import { ShiftTimetable } from './components/views/ShiftTimetable';
-import { Branches } from './components/views/Branches';
-import { TriageBoard } from './components/views/TriageBoard';
-import { NarcoticsLockbox } from './components/views/NarcoticsLockbox';
-import { ClinicalCalculators } from './components/views/ClinicalCalculators';
-import { LabHub } from './components/views/LabHub';
-import { Hospitalization } from './components/views/Hospitalization';
-import PatientQueue from './components/views/PatientQueue';
-import { PortalInbox } from './components/views/PortalInbox';
-import { PaymentVerification } from './components/views/PaymentVerification';
-import { CashReconciliationView } from './components/views/CashReconciliationView';
 
 import { InventoryItem, ViewState, AppView, ClinicSettings, Client, Pet, Procedure, User, LogEntry, Appointment as AppointmentType, Expense } from './types';
 import { api } from './services/apiService';
 import { Toaster, toast } from 'sonner';
 import { hasAccess } from './config/permissions';
 
-import { PortalLogin } from './components/portal/PortalLogin';
-import { PortalDashboard } from './components/portal/PortalDashboard';
-import { PortalPetDetails } from './components/portal/PortalPetDetails';
-import { PortalClaim } from './components/portal/PortalClaim';
-import { ReferralManagement } from './components/views/ReferralManagement';
-import { SurgeryHub } from './components/views/SurgeryHub';
-import { ReferralPortal } from './components/views/ReferralPortal';
+
+const InventoryList = lazy(() => import('./components/views/InventoryList').then(m => ({ default: m.InventoryList })));
+const AddItemForm = lazy(() => import('./components/forms/AddItemForm').then(m => ({ default: m.AddItemForm })));
+const Pos = lazy(() => import('./components/views/Pos').then(m => ({ default: m.Pos })));
+const Settings = lazy(() => import('./components/views/Settings').then(m => ({ default: m.Settings })));
+const Dashboard = lazy(() => import('./components/views/Dashboard').then(m => ({ default: m.Dashboard })));
+const ClientList = lazy(() => import('./components/views/ClientList').then(m => ({ default: m.ClientList })));
+const AddClientForm = lazy(() => import('./components/forms/AddClientForm').then(m => ({ default: m.AddClientForm })));
+const PatientList = lazy(() => import('./components/views/PatientList').then(m => ({ default: m.PatientList })));
+const AddPatientForm = lazy(() => import('./components/forms/AddPatientForm').then(m => ({ default: m.AddPatientForm })));
+const Treatment = lazy(() => import('./components/views/Treatment').then(m => ({ default: m.Treatment })));
+const ProcedureManagement = lazy(() => import('./components/views/ProcedureManagement').then(m => ({ default: m.ProcedureManagement })));
+const Appointment = lazy(() => import('./components/views/Appointment').then(m => ({ default: m.Appointment })));
+const StaffManagement = lazy(() => import('./components/views/StaffManagement').then(m => ({ default: m.StaffManagement })));
+const AuditLog = lazy(() => import('./components/views/AuditLog').then(m => ({ default: m.AuditLog })));
+const SuperAdminDashboard = lazy(() => import('./components/views/SuperAdminDashboard').then(m => ({ default: m.SuperAdminDashboard })));
+const ClinicDetails = lazy(() => import('./components/views/ClinicDetails').then(m => ({ default: m.ClinicDetails })));
+const ClientDetails = lazy(() => import('./components/views/ClientDetails').then(m => ({ default: m.ClientDetails })));
+const PatientDetails = lazy(() => import('./components/views/PatientDetails').then(m => ({ default: m.PatientDetails })));
+const TransactionHistory = lazy(() => import('./components/views/TransactionHistory').then(m => ({ default: m.TransactionHistory })));
+const FreeInvoice = lazy(() => import('./components/views/FreeInvoice').then(m => ({ default: m.FreeInvoice })));
+const Expenses = lazy(() => import('./components/views/Expenses').then(m => ({ default: m.Expenses })));
+const AddExpenseForm = lazy(() => import('./components/forms/AddExpenseForm').then(m => ({ default: m.AddExpenseForm })));
+const ProfitLossReport = lazy(() => import('./components/views/ProfitLossReport').then(m => ({ default: m.ProfitLossReport })));
+const ReminderList = lazy(() => import('./components/views/ReminderList').then(m => ({ default: m.ReminderList })));
+const AIHub = lazy(() => import('./components/views/AIHub').then(m => ({ default: m.AIHub })));
+const ICUBoard = lazy(() => import('./components/views/ICUBoard').then(m => ({ default: m.ICUBoard })));
+const ShiftTimetable = lazy(() => import('./components/views/ShiftTimetable').then(m => ({ default: m.ShiftTimetable })));
+const Branches = lazy(() => import('./components/views/Branches').then(m => ({ default: m.Branches })));
+const TriageBoard = lazy(() => import('./components/views/TriageBoard').then(m => ({ default: m.TriageBoard })));
+const NarcoticsLockbox = lazy(() => import('./components/views/NarcoticsLockbox').then(m => ({ default: m.NarcoticsLockbox })));
+const ClinicalCalculators = lazy(() => import('./components/views/ClinicalCalculators').then(m => ({ default: m.ClinicalCalculators })));
+const LabHub = lazy(() => import('./components/views/LabHub').then(m => ({ default: m.LabHub })));
+const Hospitalization = lazy(() => import('./components/views/Hospitalization').then(m => ({ default: m.Hospitalization })));
+const PatientQueue = lazy(() => import('./components/views/PatientQueue'));
+const PortalInbox = lazy(() => import('./components/views/PortalInbox').then(m => ({ default: m.PortalInbox })));
+const PaymentVerification = lazy(() => import('./components/views/PaymentVerification').then(m => ({ default: m.PaymentVerification })));
+const CashReconciliationView = lazy(() => import('./components/views/CashReconciliationView').then(m => ({ default: m.CashReconciliationView })));
+const PortalLogin = lazy(() => import('./components/portal/PortalLogin').then(m => ({ default: m.PortalLogin })));
+const PortalDashboard = lazy(() => import('./components/portal/PortalDashboard').then(m => ({ default: m.PortalDashboard })));
+const PortalPetDetails = lazy(() => import('./components/portal/PortalPetDetails').then(m => ({ default: m.PortalPetDetails })));
+const PortalClaim = lazy(() => import('./components/portal/PortalClaim').then(m => ({ default: m.PortalClaim })));
+const ReferralManagement = lazy(() => import('./components/views/ReferralManagement').then(m => ({ default: m.ReferralManagement })));
+const SurgeryHub = lazy(() => import('./components/views/SurgeryHub').then(m => ({ default: m.SurgeryHub })));
+const ReferralPortal = lazy(() => import('./components/views/ReferralPortal').then(m => ({ default: m.ReferralPortal })));
+
+const ViewLoadingFallback = () => (
+  <div className="flex min-h-64 items-center justify-center" role="status" aria-live="polite">
+    <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-600 shadow-sm">
+      <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-teal-500" aria-hidden="true" />
+      Loading workspace…
+    </div>
+  </div>
+);
 
 const DEFAULT_SETTINGS: ClinicSettings = {
   name: 'Albion Pet Clinic',
@@ -229,23 +239,30 @@ const App: React.FC = () => {
     }
   }, [isAuthenticated, currentUser]);
 
+const sanitizeClinicSettings = (s: ClinicSettings): ClinicSettings => {
+  const sym = s.currencySymbol || '₦';
+  const cleanSym = (!sym || sym === 'â‚¦' || sym === '?' || sym.includes('â')) ? '₦' : sym;
+  return { ...s, currencySymbol: cleanSym };
+};
+
   const loadData = async () => {
     if (!currentUser) return;
 
     const cacheKey = `clinic_settings_${currentUser.id}`;
     const cached = sessionStorage.getItem(cacheKey);
     if (cached) {
-      setSettings(JSON.parse(cached));
+      setSettings(sanitizeClinicSettings(JSON.parse(cached)));
     } else if (currentUser.clinic) {
-      setSettings(currentUser.clinic);
+      setSettings(sanitizeClinicSettings(currentUser.clinic));
     }
 
     setLoading(true);
     try {
       const settingsData = await api.settings.get();
       if (settingsData) {
-        setSettings(settingsData);
-        sessionStorage.setItem(cacheKey, JSON.stringify(settingsData));
+        const clean = sanitizeClinicSettings(settingsData);
+        setSettings(clean);
+        sessionStorage.setItem(cacheKey, JSON.stringify(clean));
       }
     } catch (error: any) {
       console.error("Failed to load settings:", error);
@@ -471,8 +488,6 @@ const App: React.FC = () => {
     } else {
       setCurrentView('DASHBOARD');
     }
-
-    window.location.reload();
   };
 
   const handleLogout = () => {
@@ -1220,7 +1235,9 @@ const App: React.FC = () => {
       <div className="min-h-screen bg-[#F8FAFC]">
         <Toaster position="top-right" richColors />
         <ErrorBoundary>
-          <ReferralPortal clinicId={referralClinicId} clinicName={referralClinicName} />
+          <Suspense fallback={<ViewLoadingFallback />}>
+            <ReferralPortal clinicId={referralClinicId} clinicName={referralClinicName} />
+          </Suspense>
         </ErrorBoundary>
       </div>
     );
@@ -1231,7 +1248,9 @@ const App: React.FC = () => {
       <div className="h-screen bg-[#F8FAFC]">
         <Toaster position="top-right" richColors />
         <ErrorBoundary>
-          {renderContent()}
+          <Suspense fallback={<ViewLoadingFallback />}>
+            {renderContent()}
+          </Suspense>
         </ErrorBoundary>
       </div>
     );
@@ -1251,7 +1270,9 @@ const App: React.FC = () => {
           settings={settings}
         >
           <ErrorBoundary>
-            {renderContent()}
+            <Suspense fallback={<ViewLoadingFallback />}>
+              {renderContent()}
+            </Suspense>
           </ErrorBoundary>
         </Layout>
       )}

@@ -130,29 +130,32 @@ export const Appointment: React.FC<AppointmentProps> = ({ clients, procedures, s
       {/* Header */}
       <div className="flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
         <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-amber-500/15 text-amber-600 flex items-center justify-center border border-amber-500/30">
+            <CalendarDays className="w-5 h-5" />
+          </div>
           <div>
-            <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">Appointments</h1>
-            <p className="text-blue-500 text-sm font-bold">Manage appointments and schedule</p>
+            <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">Appointments</h1>
+            <p className="text-slate-500 text-sm font-medium">Manage clinical schedules, consultations, and intake queue.</p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
           <button
             onClick={() => setViewMode('calendar')}
-            className={`px-4 py-2 rounded-lg font-medium ${viewMode === 'calendar' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}
+            className={`flex-1 sm:flex-none justify-center px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all ${viewMode === 'calendar' ? 'bg-navy-900 text-amber-400 border border-amber-500/30 shadow-sm' : 'bg-white/80 text-slate-600 border border-slate-200'}`}
           >
-            <CalendarDays className="w-4 h-4 inline mr-2" />
+            <CalendarDays className="w-4 h-4 inline mr-1.5" />
             Calendar
           </button>
           <button
             onClick={() => setViewMode('list')}
-            className={`px-4 py-2 rounded-lg font-medium ${viewMode === 'list' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}
+            className={`flex-1 sm:flex-none justify-center px-4 py-2.5 rounded-xl text-xs font-extrabold transition-all ${viewMode === 'list' ? 'bg-navy-900 text-amber-400 border border-amber-500/30 shadow-sm' : 'bg-white/80 text-slate-600 border border-slate-200'}`}
           >
-            <List className="w-4 h-4 inline mr-2" />
+            <List className="w-4 h-4 inline mr-1.5" />
             List
           </button>
           <button
             onClick={() => window.dispatchEvent(new CustomEvent('app-navigate', { detail: { view: 'AI_HUB', tab: 'OPERATIONS' } }))}
-            className="px-4 py-2 rounded-lg font-black text-amber-600 bg-amber-50 border border-amber-100 flex items-center gap-2 shadow-sm hover:bg-amber-100 transition"
+            className="flex-1 sm:flex-none justify-center px-4 py-2.5 rounded-xl text-xs font-extrabold text-navy-950 bg-amber-500 border border-amber-400 flex items-center gap-1.5 shadow-md hover:bg-amber-400 transition-all"
           >
             <Zap className="w-4 h-4" />
             AI Audit
@@ -161,7 +164,7 @@ export const Appointment: React.FC<AppointmentProps> = ({ clients, procedures, s
       </div>
 
       {/* Filters */}
-      <div className="soft-card p-4 border-t-4 border-blue-400">
+      <div className="soft-card p-4 border-l-4 border-amber-500">
         <div className="flex flex-wrap gap-4 items-center">
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-slate-500" />
@@ -193,8 +196,8 @@ export const Appointment: React.FC<AppointmentProps> = ({ clients, procedures, s
         {/* Calendar/List Section */}
         <div className="xl:col-span-2 space-y-6">
           {viewMode === 'calendar' ? (
-            <div className="soft-card p-6 border-t-4 border-blue-400">
-              <div className="flex justify-between items-center mb-4">
+            <div className="soft-card p-4 md:p-6 border-t-4 border-blue-400">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
                 <h2 className="font-bold text-slate-700 flex items-center gap-2">
                   <CalendarDays className="w-5 h-5 text-blue-400" />
                   Appointments for {formatDateOnly(selectedDate)}
@@ -203,7 +206,7 @@ export const Appointment: React.FC<AppointmentProps> = ({ clients, procedures, s
                   type="date"
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  className="soft-input px-3 py-2 text-sm"
+                  className="soft-input px-3 py-2 text-sm w-full sm:w-auto"
                 />
               </div>
 

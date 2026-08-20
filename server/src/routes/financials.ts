@@ -109,4 +109,64 @@ router.get('/report', authenticate, authorize('Admin'), async (req: AuthRequest,
     }
 });
 
+// GET /api/financials/branches - Multi-Branch Financial Insights (SuperAdmin / Admin)
+router.get('/branches', authenticate, async (req: AuthRequest, res) => {
+    try {
+        if (!req.user?.isSuperAdmin && !req.user?.roles.includes('Admin')) {
+            return res.status(403).json({ error: 'Access denied: Super Admin or Admin role required' });
+        }
+
+        const clinics = await prisma.clinic.findMany({
+            where: req.user.isSuperAdmin ? {} : { id: req.user.clinicId as string },
+            select: { id: true, name: true, acronym: true }
+        });
+
+        const branchReports = await Promise.all(
+            clinics.map(async (c) => {
+                const [revenue, expenses, receivables] = await Promise.all([
+                    prisma.sale.aggregate({
+                        where: { clinicId: c.id, status: { not: 'Deleted' } },
+                        _sum: { amountPaid: true }
+                    }),
+                    prisma.expense.aggregate({
+                        where: { clinicId: c.id },
+                        _sum: { amount: true }
+                    }),
+                    prisma.sale.aggregate({
+                        where: { clinicId: c.id, balanceDue: { gt: 0 } },
+                        _sum: { balanceDue: true }
+                    })
+                ]);
+
+                const inflow = revenue._sum.amountPaid || 0;
+                const expenditure = expenses._sum.amount || 0;
+                const netMargin = inflow - expenditure;
+
+                return {
+                    clinicId: c.id,
+                    clinicName: c.name,
+                    acronym: c.acronym,
+                    inflow,
+                    expenditure,
+                    netMargin,
+                    profitabilityRate: inflow > 0 ? Math.round((netMargin / inflow) * 100) : 0,
+                    outstandingReceivables: receivables._sum.balanceDue || 0
+                };
+            })
+        );
+
+        res.json({
+            timestamp: new Date().toISOString(),
+            totalBranches: branchReports.length,
+            totalInflow: branchReports.reduce((sum, b) => sum + b.inflow, 0),
+            totalExpenditure: branchReports.reduce((sum, b) => sum + b.expenditure, 0),
+            netMargin: branchReports.reduce((sum, b) => sum + b.netMargin, 0),
+            branches: branchReports
+        });
+    } catch (error) {
+        console.error('Multi-branch financial error:', error);
+        res.status(500).json({ error: 'Failed to generate branch financial report' });
+    }
+});
+
 export default router;

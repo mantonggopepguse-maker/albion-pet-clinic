@@ -214,28 +214,28 @@ const PatientQueue: React.FC<PatientQueueProps> = ({ currentUser, settings, onVi
   }
 
   return (
-    <div style={{ padding: '24px 28px', maxWidth: 1400, margin: '0 auto' }}>
+    <div className="p-4 md:p-7 max-w-[1400px] mx-auto pb-24 md:pb-8 animate-fade-in">
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
-          <h1 style={{ fontSize: 28, fontWeight: 700, color: '#f3f4f6', margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <ListOrdered size={28} style={{ color: '#7c3aed' }} />
+          <h1 className="text-2xl md:text-3xl font-extrabold text-slate-100 flex items-center gap-2.5 tracking-tight">
+            <ListOrdered size={28} className="text-purple-500 flex-shrink-0" />
             Patient Queue
           </h1>
-          <p style={{ color: '#9ca3af', fontSize: 14, marginTop: 4 }}>
+          <p className="text-slate-400 text-xs md:text-sm mt-1">
             {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+        <div className="flex flex-wrap gap-2.5 items-center w-full sm:w-auto">
           <button
             onClick={() => fetchData()}
-            style={{ background: 'rgba(124,58,237,0.12)', border: '1px solid rgba(124,58,237,0.3)', borderRadius: 10, padding: '8px 14px', color: '#a78bfa', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}
+            className="flex-1 sm:flex-none justify-center bg-purple-500/15 border border-purple-500/30 rounded-xl px-3.5 py-2 text-purple-300 hover:bg-purple-500/25 active:scale-95 transition-all flex items-center gap-1.5 text-xs md:text-sm font-semibold"
           >
             <RefreshCw size={14} /> Refresh
           </button>
           <button
             onClick={() => setAddModal(m => ({ ...m, show: true }))}
-            style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)', border: 'none', borderRadius: 10, padding: '8px 18px', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600 }}
+            className="flex-1 sm:flex-none justify-center bg-gradient-to-r from-purple-600 to-indigo-600 border border-purple-400/40 rounded-xl px-4 py-2 text-white hover:brightness-110 active:scale-95 transition-all flex items-center gap-1.5 text-xs md:text-sm font-bold shadow-md shadow-purple-900/30"
           >
             <Plus size={15} /> Add to Queue
           </button>
@@ -243,7 +243,7 @@ const PatientQueue: React.FC<PatientQueueProps> = ({ currentUser, settings, onVi
       </div>
 
       {/* Stats Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 24 }}>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
         {[
           { label: 'Total Today', value: stats.total, icon: Users, color: '#7c3aed' },
           { label: 'Waiting', value: stats.waiting, icon: Clock, color: '#f59e0b' },
@@ -251,13 +251,13 @@ const PatientQueue: React.FC<PatientQueueProps> = ({ currentUser, settings, onVi
           { label: 'Completed', value: stats.completed, icon: CheckCircle2, color: '#10b981' },
           { label: 'Avg Wait', value: `${stats.avgWaitMinutes}m`, icon: Timer, color: '#8b5cf6' },
         ].map(stat => (
-          <div key={stat.label} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div style={{ width: 42, height: 42, borderRadius: 12, background: `${stat.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <stat.icon size={20} style={{ color: stat.color }} />
+          <div key={stat.label} className="bg-white/[0.04] border border-white/[0.08] rounded-2xl p-3 md:p-4 flex items-center gap-3 backdrop-blur-sm">
+            <div style={{ width: 38, height: 38, borderRadius: 10, background: `${stat.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <stat.icon size={18} style={{ color: stat.color }} />
             </div>
-            <div>
-              <div style={{ fontSize: 22, fontWeight: 700, color: '#f3f4f6' }}>{stat.value}</div>
-              <div style={{ fontSize: 11, color: '#9ca3af', letterSpacing: 0.3 }}>{stat.label}</div>
+            <div className="min-w-0 flex-1">
+              <div className="text-lg md:text-xl font-bold text-slate-100 truncate">{stat.value}</div>
+              <div className="text-[10px] md:text-xs text-slate-400 tracking-wider truncate">{stat.label}</div>
             </div>
           </div>
         ))}

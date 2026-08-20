@@ -42,7 +42,7 @@ router.post('/scan-product', authenticate, async (req, res) => {
         const body = scanProductSchema.safeParse(req.body);
         if (!body.success) return res.status(400).json({ error: 'Invalid request', details: body.error.issues });
 
-        const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+        const apiKey = process.env.GEMINI_API_KEY;
 
         if (!apiKey) {
             console.error('âŒ AI Scan Error: GEMINI_API_KEY is not configured in .env file');
@@ -166,7 +166,7 @@ router.post('/suggest-diagnosis', authenticate, async (req, res) => {
         const body = suggestDiagnosisSchema.safeParse(req.body);
         if (!body.success) return res.status(400).json({ error: 'Invalid request', details: body.error.issues });
 
-        const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+        const apiKey = process.env.GEMINI_API_KEY;
 
         if (!apiKey) {
             console.error('âŒ AI Diagnosis Error: GEMINI_API_KEY is not configured');
@@ -266,7 +266,7 @@ Vitals: ${JSON.stringify(patientContext.vitals || {})}`
 
 router.post('/transcribe', authenticate, upload.single('audio'), async (req, res) => {
     try {
-        const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+        const apiKey = process.env.GEMINI_API_KEY;
 
         if (!apiKey) {
             console.error('âŒ AI Transcription Error: GEMINI_API_KEY is not configured');
@@ -350,7 +350,7 @@ router.post('/transcribe', authenticate, upload.single('audio'), async (req, res
 // when a patientId is supplied) so dictation history survives page refreshes.
 router.post('/dictate', authenticate, upload.single('audio'), async (req, res) => {
     try {
-        const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+        const apiKey = process.env.GEMINI_API_KEY;
 
         if (!apiKey) {
             console.error('âŒ AI Dictation Error: GEMINI_API_KEY is not configured');

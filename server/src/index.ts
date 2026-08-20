@@ -2,15 +2,17 @@
  * Express application entry point.
  * @module index
  */
-// CRITICAL: Load environment variables FIRST, before any imports that might use them
-import dotenv from 'dotenv';
-dotenv.config();
+// Side-effect import is evaluated before route modules, so .env is loaded first in ESM.
+import 'dotenv/config';
 
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { prisma } from './db.js';
 import rateLimit from 'express-rate-limit';
+import { validateProductionEnvironment } from './config/env.js';
+
+validateProductionEnvironment();
 
 // Rate Limiters
 const apiLimiter = rateLimit({
@@ -95,10 +97,6 @@ const defaultAllowedOrigins = [
     'http://localhost:3000',
     'http://localhost:5173',
 ];
-// Also allow any Cloud Run revision URL (*.run.app)
-const isCloudRunOrigin = (origin: string): boolean =>
-    /^https:\/\/[a-z0-9-]+\.run\.app$/.test(origin) ||
-    /^https:\/\/[a-z0-9-]+-[a-z0-9]+-uc\.a\.run\.app$/.test(origin);
 const configuredAllowedOrigins = (process.env.ALLOWED_ORIGINS || '')
     .split(',')
     .map(origin => origin.trim())
@@ -113,35 +111,70 @@ app.set('trust proxy', 1);
 // Security headers
 app.use(helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
-    contentSecurityPolicy: false,
+    crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            baseUri: ["'self'"],
+            connectSrc: [
+                "'self'",
+                'https://*.googleapis.com',
+                'https://*.firebaseio.com',
+                'wss://*.firebaseio.com',
+            ],
+            fontSrc: ["'self'", 'data:', 'https:'],
+            formAction: ["'self'"],
+            frameAncestors: ["'none'"],
+            frameSrc: ["'self'", 'https://accounts.google.com', 'https://*.firebaseapp.com'],
+            imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
+            manifestSrc: ["'self'"],
+            objectSrc: ["'none'"],
+            scriptSrc: ["'self'"],
+            scriptSrcAttr: ["'none'"],
+            styleSrc: ["'self'", "'unsafe-inline'", 'https:'],
+            workerSrc: ["'self'", 'blob:'],
+            upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
+        },
+    },
 }));
 
 // Middleware
 app.use(cors({
     origin: (origin, callback) => {
-        // Allow same-origin requests (no origin header) and Cloud Run origins
-        if (!origin || allowedOrigins.includes(origin) || isCloudRunOrigin(origin)) {
+        // Requests without an Origin header are same-origin/server-to-server.
+        if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
             return;
         }
 
-        callback(new Error(`Origin ${origin} is not allowed by CORS`));
+        const corsError = new Error('Origin is not allowed by CORS') as Error & { status?: number };
+        corsError.status = 403;
+        callback(corsError);
     },
     credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Serve static files from the React app
+// Cache content-hashed Vite assets aggressively; revalidate HTML/PWA metadata.
 const frontendPath = path.join(__dirname, '../../dist');
+app.use('/assets', express.static(path.join(frontendPath, 'assets'), {
+    maxAge: '1y',
+    immutable: true,
+    etag: true,
+}));
 app.use(express.static(frontendPath, {
-    maxAge: '1d',
-    etag: false
+    maxAge: 0,
+    etag: true,
+    setHeaders: (res, filePath) => {
+        if (/\b(?:sw|workbox|manifest).*\.(?:js|json|webmanifest)$/i.test(path.basename(filePath))) {
+            res.setHeader('Cache-Control', 'no-cache');
+        }
+    },
 }));
 
-// Serve uploaded files (receipts, etc.)
-const uploadsPath = path.join(__dirname, '../uploads');
-app.use('/uploads', express.static(uploadsPath));
+// Uploaded records are available only through authenticated API routes.
+app.use('/uploads', (_req, res) => res.status(404).json({ error: 'Not found' }));
 
 // Request logging middleware (Development only to save Cloud Logging costs)
 if (process.env.NODE_ENV !== 'production') {
@@ -160,7 +193,12 @@ app.get('/health', async (req, res) => {
         dbStatus = 'error';
         console.error('Health check DB error:', e instanceof Error ? e.message : e);
     }
-    res.json({ status: 'ok', db: dbStatus, timestamp: new Date().toISOString() });
+    const statusCode = dbStatus === 'ok' ? 200 : 503;
+    res.status(statusCode).json({
+        status: dbStatus === 'ok' ? 'ok' : 'degraded',
+        db: dbStatus,
+        timestamp: new Date().toISOString(),
+    });
 });
 
 // Rate Limiting
@@ -218,14 +256,14 @@ app.use('/api/firebase', firebaseRoutes);
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
     console.error('Error:', err);
 
-    let clientMessage = err.message || 'Internal server error';
-    if (process.env.NODE_ENV === 'production' && (!err.status || err.status === 500)) {
-        if (err.code && typeof err.code === 'string' && err.code.startsWith('P')) {
-            clientMessage = 'A database constraint error occurred.';
-        }
-    }
+    const status = Number.isInteger(err?.status) && err.status >= 400 && err.status < 600
+        ? err.status
+        : 500;
+    const clientMessage = process.env.NODE_ENV === 'production' && status >= 500
+        ? 'Internal server error'
+        : (err.message || 'Internal server error');
 
-    res.status(err.status || 500).json({
+    res.status(status).json({
         error: clientMessage,
         ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
     });
@@ -238,7 +276,9 @@ app.use('/api', (req, res) => {
 
 // Fallback to React app for all other routes (SPA support)
 app.get('*', (req, res) => {
-    res.sendFile(path.join(frontendPath, 'index.html'));
+    res.sendFile(path.join(frontendPath, 'index.html'), {
+        headers: { 'Cache-Control': 'no-cache' },
+    });
 });
 
 // Start server (skip in test environment)

@@ -57,7 +57,7 @@ router.post('/transcribe', authenticate, upload.single('audio'), async (req, res
         filePath = req.file.path;
 
         // Initialize Gemini
-        const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+        const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) throw new Error('AI configuration missing');
 
         const genAI = new GoogleGenerativeAI(apiKey);
@@ -142,7 +142,7 @@ router.post('/generate-soap', authenticate, async (req, res) => {
             include: { owner: true }
         });
 
-        const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+        const apiKey = process.env.GEMINI_API_KEY;
         const genAI = new GoogleGenerativeAI(apiKey!);
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 

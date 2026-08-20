@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom';
 import { X, Printer, Download, Copy, Share2, Eye, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { CartItem, ClinicSettings } from '../../types';
 import html2pdf from 'html2pdf.js';
+import { api } from '../../services/apiService';
+import { toast } from 'sonner';
 
 interface InvoiceModalProps {
     isOpen: boolean;
@@ -208,10 +210,16 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
                                                         </div>
                                                         <span className="font-black text-slate-800 uppercase mx-1">{p.method.replace('_', ' ')}</span>
                                                         <span className="font-black text-peach-600 ml-auto">{settings.currencySymbol}{p.amount.toLocaleString()}</span>
-                                                        {p.receiptUrl && (
-                                                            <a href={p.receiptUrl} target="_blank" rel="noopener noreferrer" className="ml-1 p-0.5 text-blue-500 hover:text-blue-700" title="View receipt">
+                                                        {p.receiptUrl && p.id && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => api.payments.openReceipt(p.id)
+                                                                    .catch((err) => toast.error(err?.message || 'Failed to load receipt'))}
+                                                                className="ml-1 p-0.5 text-blue-500 hover:text-blue-700"
+                                                                title="View receipt"
+                                                            >
                                                                 <Eye size={10} />
-                                                            </a>
+                                                            </button>
                                                         )}
                                                     </div>
                                                 );

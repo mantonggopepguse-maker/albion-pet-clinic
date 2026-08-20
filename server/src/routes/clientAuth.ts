@@ -7,9 +7,10 @@ import { prisma } from '../db.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
+import { authenticate, type AuthRequest } from '../middleware/auth.js';
+import { getJwtExpiresIn, getJwtSecret } from '../config/env.js';
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'default-secret-change-this';
 
 const loginSchema = z.object({
     email: z.string().email(),
@@ -38,8 +39,8 @@ const signClientToken = (client: {
             isSuperAdmin: false,
             isClient: true,
         },
-        JWT_SECRET,
-        { expiresIn: '30d' }
+        getJwtSecret(),
+        { expiresIn: getJwtExpiresIn('30d') }
     );
 
     return {
@@ -107,6 +108,9 @@ router.post('/login', async (req, res) => {
         }
         res.json(attempt.session);
     } catch (error) {
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: 'Invalid input', details: error.errors });
+        }
         console.error('Client Login Error:', error);
         res.status(500).json({ error: 'Login failed' });
     }
@@ -267,21 +271,19 @@ router.post('/invite/accept', async (req, res) => {
             message: 'Portal account activated successfully',
         });
     } catch (error) {
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: 'Invalid input', details: error.errors });
+        }
         console.error('Invite acceptance error:', error);
         res.status(500).json({ error: 'Failed to accept invite' });
     }
 });
 
 // POST /api/auth/client/change-password
-router.post('/change-password', async (req, res) => {
+router.post('/change-password', authenticate, async (req: AuthRequest, res) => {
     try {
-        const authHeader = req.headers.authorization;
-        if (!authHeader?.startsWith('Bearer ')) {
-            return res.status(401).json({ error: 'No token provided' });
-        }
-
-        const decoded = jwt.verify(authHeader.substring(7), JWT_SECRET) as any;
-        if (!decoded?.isClient || !decoded?.id || !decoded?.clinicId) {
+        const decoded = req.user;
+        if (!decoded?.roles.includes('CLIENT') || !decoded.id || !decoded.clinicId) {
             return res.status(403).json({ error: 'Client portal access required' });
         }
 

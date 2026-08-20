@@ -7,13 +7,15 @@
     "scripts": {
         "dev": "tsx watch src/index.ts",
         "build": "tsc",
+        "typecheck": "tsc --noEmit",
         "start": "node dist/index.js",
         "prisma:generate": "prisma generate",
         "prisma:migrate": "prisma migrate dev",
         "prisma:studio": "prisma studio",
         "prisma:seed": "tsx prisma/seed.ts",
         "test": "vitest run",
-        "test:watch": "vitest"
+        "test:watch": "vitest",
+        "check": "npm run typecheck && npm test && npm run build"
     },
     "prisma": {
         "seed": "tsx prisma/seed.ts"

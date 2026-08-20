@@ -1,14 +1,13 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, '.', '');
+export default defineConfig(() => {
   return {
     server: {
       port: 5173,
@@ -46,23 +45,10 @@ export default defineConfig(({ mode }) => {
           ],
         },
         workbox: {
+          cleanupOutdatedCaches: true,
+          navigateFallbackDenylist: [/^\/api\//],
           globPatterns: ['**/*.{js,css,html,ico,png,svg,jpg,jpeg,woff2}'],
           runtimeCaching: [
-            {
-              urlPattern: /\/api\//,
-              handler: 'NetworkFirst',
-              options: {
-                cacheName: 'apc-api-cache',
-                expiration: {
-                  maxEntries: 200,
-                  maxAgeSeconds: 60 * 60 * 24,
-                },
-                networkTimeoutSeconds: 5,
-                cacheableResponse: {
-                  statuses: [0, 200],
-                },
-              },
-            },
             {
               urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/,
               handler: 'CacheFirst',
@@ -115,7 +101,7 @@ export default defineConfig(({ mode }) => {
               return 'html2pdf-vendor';
             }
 
-            if (id.includes('@google') || id.includes('dompurify')) {
+            if (id.includes('dompurify')) {
               return 'ai-vendor';
             }
 

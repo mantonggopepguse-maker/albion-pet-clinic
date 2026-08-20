@@ -193,7 +193,7 @@ router.get('/profit-loss', authenticate, async (req: AuthRequest, res) => {
 router.post('/referral-synthesis', authenticate, async (req: AuthRequest, res) => {
     try {
         const { patientId } = req.body;
-        const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+        const apiKey = process.env.GEMINI_API_KEY;
 
         if (!apiKey) {
             return res.status(500).json({ error: 'AI API Key not configured' });
@@ -277,7 +277,7 @@ router.post('/referral-synthesis', authenticate, async (req: AuthRequest, res) =
 router.post('/home-care-instructions', authenticate, async (req: AuthRequest, res) => {
     try {
         const { treatmentId } = req.body;
-        const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+        const apiKey = process.env.GEMINI_API_KEY;
 
         if (!apiKey) {
             return res.status(500).json({ error: 'AI API Key not configured' });

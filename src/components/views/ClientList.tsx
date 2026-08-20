@@ -20,33 +20,33 @@ export const ClientList: React.FC<ClientListProps> = ({ clients, onAddClient, on
 
     return (
         <div className="client-page-shell">
-            <div className="client-panel p-6 md:p-8">
-                <div className="flex flex-col lg:flex-row gap-6 justify-between items-start lg:items-center">
+            <div className="client-panel p-5 md:p-6">
+                <div className="flex flex-col lg:flex-row gap-5 justify-between items-start lg:items-center">
                     <div>
-                        <div className="flex items-center gap-3 mb-3">
-                            <div className="w-11 h-11 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center border border-teal-100">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="w-10 h-10 rounded-2xl bg-amber-500/15 text-amber-600 flex items-center justify-center border border-amber-500/30">
                                 <User className="w-5 h-5" />
                             </div>
                             <span className="client-badge">{clients.length} clients</span>
                         </div>
-                        <h1 className="text-3xl md:text-4xl font-extrabold text-slate-800 tracking-tight">Clients</h1>
-                        <p className="text-slate-500 mt-2">Find a client, open their profile, or add a new one.</p>
+                        <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">Clients</h1>
+                        <p className="text-slate-500 text-sm mt-1">Find a client, open their profile, or add a new record.</p>
                     </div>
 
                     <div className="flex flex-col md:flex-row items-center gap-3 w-full lg:w-auto">
                         <div className="relative w-full lg:w-80">
-                            <Search className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 ${searchTerm ? 'text-teal-600' : 'text-slate-400'}`} />
+                            <Search className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 ${searchTerm ? 'text-amber-600' : 'text-slate-400'}`} />
                             <input
                                 type="text"
                                 placeholder="Search by name, phone, or code"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full rounded-2xl border border-slate-200 bg-slate-50 py-3.5 pl-11 pr-4 text-sm text-slate-700 placeholder:text-slate-400 outline-none transition-all focus:border-teal-300 focus:bg-white focus:ring-4 focus:ring-teal-50"
+                                className="w-full rounded-xl border border-slate-200 bg-slate-50/80 py-3 pl-11 pr-4 text-sm text-slate-800 placeholder:text-slate-400 outline-none transition-all focus:border-amber-400 focus:bg-white focus:ring-4 focus:ring-amber-500/10 font-medium"
                             />
                         </div>
                         <button
                             onClick={onAddClient}
-                            className="w-full md:w-auto px-5 py-3.5 rounded-2xl bg-teal-600 text-white font-semibold hover:bg-teal-700 transition-all flex items-center justify-center gap-2"
+                            className="w-full md:w-auto px-5 py-3 rounded-xl bg-amber-500 text-navy-950 font-extrabold hover:bg-amber-400 border border-amber-400 shadow-md transition-all flex items-center justify-center gap-2 text-sm"
                         >
                             <Plus className="w-4 h-4" /> Add client
                         </button>

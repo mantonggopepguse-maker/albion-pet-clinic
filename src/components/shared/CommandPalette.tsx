@@ -156,7 +156,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose,
                                     <div
                                         key={client.id}
                                         onClick={() => handleSelect({ ...client, type: 'client' })}
-                                        className={`px-4 py-3 mx-2 rounded-2xl flex items-center justify-between cursor-pointer transition-all duration-300 ease-out ${isSelected ? 'bg-amber-500 text-white shadow-xl shadow-amber-200 scale-[1.02]' : 'hover:bg-slate-50 hover:translate-x-1'}`}
+                                        className={`px-4 py-3 mx-2 rounded-2xl flex items-center justify-between cursor-pointer transition-all duration-300 ease-out ${isSelected ? 'bg-navy-900 text-white shadow-xl border border-amber-500/40 scale-[1.02]' : 'hover:bg-slate-50 hover:translate-x-1'}`}
                                         onMouseEnter={() => setSelectedIndex(flatResults.findIndex((item) => getResultKey(item) === `client:${client.id}`))}
                                     >
                                         <div className="flex items-center gap-3">

@@ -135,7 +135,7 @@ router.post('/clinics', authenticate, superAdminOnly, async (req: AuthRequest, r
                     status: data.status,
                     country: data.country || 'Nigeria',
                     language: data.language || 'English',
-                    currencySymbol: data.currencySymbol || 'â‚¦',
+                    currencySymbol: data.currencySymbol || '₦',
                     acronym: data.acronym || data.name.split(' ').filter(Boolean).map(w => w[0]).join('').toUpperCase().substring(0, 3)
                 }
             });

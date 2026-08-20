@@ -42,7 +42,7 @@ router.post('/analyze-case', authenticate, async (req: AuthRequest, res) => {
         if (!body.success) return res.status(400).json({ error: 'Invalid request', details: body.error.issues });
 
         const { patientId, complaint, clinicalSigns, vitals } = body.data;
-        const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+        const apiKey = process.env.GEMINI_API_KEY;
 
         if (!apiKey) {
             return res.status(500).json({ error: 'AI Service configuration missing' });
@@ -123,7 +123,7 @@ router.post('/parse-lab-result', authenticate, async (req: AuthRequest, res) => 
         if (!body.success) return res.status(400).json({ error: 'Invalid request', details: body.error.issues });
 
         const { rawText, patientId } = body.data;
-        const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+        const apiKey = process.env.GEMINI_API_KEY;
 
         if (!apiKey) return res.status(500).json({ error: 'AI Service configuration missing' });
 
@@ -167,7 +167,7 @@ router.post('/suggest-lab-plan', authenticate, async (req: AuthRequest, res) => 
         if (!body.success) return res.status(400).json({ error: 'Invalid request', details: body.error.issues });
 
         const { patientId, complaint, clinicalSigns, vitals, problems } = body.data;
-        const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+        const apiKey = process.env.GEMINI_API_KEY;
 
         if (!apiKey) return res.status(500).json({ error: 'AI Service configuration missing' });
 
@@ -220,7 +220,7 @@ router.post('/interpret-lab-result', authenticate, async (req: AuthRequest, res)
         if (!body.success) return res.status(400).json({ error: 'Invalid request', details: body.error.issues });
 
         const { patientId, lab } = body.data;
-        const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+        const apiKey = process.env.GEMINI_API_KEY;
 
         if (!apiKey) return res.status(500).json({ error: 'AI Service configuration missing' });
 

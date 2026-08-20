@@ -115,10 +115,6 @@ export const AdminDashboard: React.FC<DashboardProps> = ({
         return 'Good Evening';
     };
 
-    if (loading) {
-        return <PageLoader />;
-    }
-
     return (
         <div className="space-y-8 animate-fade-in pb-20 relative max-w-7xl mx-auto">
             <div className="dashboard-hero">
@@ -152,15 +148,15 @@ export const AdminDashboard: React.FC<DashboardProps> = ({
             <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4 animate-fade-in-up" style={{ animationDelay: '40ms' }}>
                 <div className="stat-widget stat-widget-purple">
                     <div className="stat-kicker">Revenue target</div>
-                    <div className="stat-value mt-3">
+                    <div className="stat-value mt-2">
                         {settings.currencySymbol}{Math.round(getRevenue()).toLocaleString()}
-                        <span className="text-lg md:text-xl text-white/72"> / {settings.currencySymbol}{Math.max(Math.round(getRevenue() * 1.35), 1).toLocaleString()}</span>
+                        <span className="text-sm font-semibold text-slate-400"> / {settings.currencySymbol}{Math.max(Math.round(getRevenue() * 1.35), 1).toLocaleString()}</span>
                     </div>
-                    <div className="mt-4 h-10 flex items-end gap-1.5">
-                        <div className="w-10 h-1 rounded-full bg-white/20"></div>
-                        <div className="w-12 h-1.5 rounded-full bg-white/28"></div>
-                        <div className="w-14 h-2 rounded-full bg-white/40"></div>
-                        <div className="w-16 h-2.5 rounded-full bg-amber-200/90"></div>
+                    <div className="mt-3 h-8 flex items-end gap-1.5">
+                        <div className="w-10 h-1 rounded-full bg-slate-200"></div>
+                        <div className="w-12 h-1.5 rounded-full bg-slate-300"></div>
+                        <div className="w-14 h-2 rounded-full bg-amber-400"></div>
+                        <div className="w-16 h-2.5 rounded-full bg-amber-500 shadow-sm"></div>
                     </div>
                     <div className="stat-footer">
                         <span>{dateFilter}</span>
@@ -172,19 +168,19 @@ export const AdminDashboard: React.FC<DashboardProps> = ({
                     <div className="flex items-start justify-between gap-3">
                         <div>
                             <div className="stat-kicker">New patients</div>
-                            <div className="stat-value mt-3">{getPatientCount()}</div>
+                            <div className="stat-value mt-2">{getPatientCount()}</div>
                         </div>
-                        <UsersRound className="w-7 h-7 text-white/80" />
+                        <UsersRound className="w-6 h-6 text-slate-400" />
                     </div>
-                    <div className="mt-6 grid grid-cols-3 gap-2">
+                    <div className="mt-4 grid grid-cols-3 gap-1.5">
                         {[
                             ['Today', stats.patients.today],
                             ['7 days', stats.patients.week],
                             ['Month', stats.patients.month]
                         ].map(([label, value]) => (
-                            <div key={label} className="rounded-2xl bg-white/14 px-3 py-2 text-center">
-                                <div className="text-xl font-extrabold text-white">{value}</div>
-                                <div className="mt-1 text-[9px] font-black uppercase tracking-[0.16em] text-white/70">{label}</div>
+                            <div key={label} className="rounded-xl bg-slate-100/90 px-2 py-1.5 text-center border border-slate-200/60">
+                                <div className="text-base font-black text-slate-900">{value}</div>
+                                <div className="mt-0.5 text-[8.5px] font-black uppercase tracking-[0.12em] text-slate-500">{label}</div>
                             </div>
                         ))}
                     </div>
@@ -196,12 +192,12 @@ export const AdminDashboard: React.FC<DashboardProps> = ({
 
                 <div className="stat-widget stat-widget-teal">
                     <div className="stat-kicker">Net profit</div>
-                    <div className="stat-value mt-3">{settings.currencySymbol}{Math.round(getNetProfit()).toLocaleString()}</div>
-                    <div className="mt-6 flex items-center gap-2">
-                        <div className="h-2 w-24 rounded-full bg-white/20 overflow-hidden">
-                            <div className="h-full rounded-full bg-white/90" style={{ width: `${Math.min(100, Math.max(12, Math.round((getNetProfit() / Math.max(getRevenue(), 1)) * 100)))}%` }}></div>
+                    <div className="stat-value mt-2">{settings.currencySymbol}{Math.round(getNetProfit()).toLocaleString()}</div>
+                    <div className="mt-4 flex items-center gap-2">
+                        <div className="h-2 w-24 rounded-full bg-slate-100 border border-slate-200 overflow-hidden">
+                            <div className="h-full rounded-full bg-amber-500" style={{ width: `${Math.min(100, Math.max(12, Math.round((getNetProfit() / Math.max(getRevenue(), 1)) * 100)))}%` }}></div>
                         </div>
-                        <span className="text-sm font-bold text-white/90">{Math.min(100, Math.max(0, Math.round((getNetProfit() / Math.max(getRevenue(), 1)) * 100)))}%</span>
+                        <span className="text-xs font-extrabold text-slate-700">{Math.min(100, Math.max(0, Math.round((getNetProfit() / Math.max(getRevenue(), 1)) * 100)))}%</span>
                     </div>
                     <div className="stat-footer">
                         <span>Margin</span>
@@ -211,10 +207,10 @@ export const AdminDashboard: React.FC<DashboardProps> = ({
 
                 <div className="stat-widget stat-widget-amber">
                     <div className="stat-kicker">Appointments</div>
-                    <div className="stat-value mt-3">{upcomingAppointments.length}</div>
-                    <div className="mt-5 grid grid-cols-4 gap-2">
+                    <div className="stat-value mt-2">{upcomingAppointments.length}</div>
+                    <div className="mt-4 grid grid-cols-4 gap-1.5">
                         {Array.from({ length: 4 }).map((_, index) => (
-                            <div key={index} className={`h-8 rounded-[0.9rem] ${index < Math.min(upcomingAppointments.length, 4) ? 'bg-white/24' : 'bg-black/10'}`}></div>
+                            <div key={index} className={`h-6 rounded-[0.7rem] ${index < Math.min(upcomingAppointments.length, 4) ? 'bg-amber-500 shadow-sm' : 'bg-slate-100'}`}></div>
                         ))}
                     </div>
                     <div className="stat-footer">

@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../db.js';
+import { getJwtSecret } from '../config/env.js';
 
 /**
  * Extended Express request with authenticated user context.
@@ -17,6 +18,7 @@ export interface AuthRequest extends Request {
         roles: string[];
         clinicId?: string;
         isSuperAdmin: boolean;
+        isClient?: boolean;
     };
     file?: any;
     files?: any;
@@ -41,16 +43,28 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
         }
 
         const token = authHeader.substring(7);
-        const secret = process.env.JWT_SECRET;
-        if (!secret) {
+        let secret: string;
+        try {
+            secret = getJwtSecret();
+        } catch {
             return res.status(500).json({ error: 'JWT_SECRET not configured' });
         }
 
         const decoded = jwt.verify(token, secret) as any;
 
+        if (
+            !decoded ||
+            typeof decoded !== 'object' ||
+            typeof decoded.id !== 'string' ||
+            !Array.isArray(decoded.roles) ||
+            typeof decoded.isSuperAdmin !== 'boolean'
+        ) {
+            return res.status(401).json({ error: 'Invalid or expired token' });
+        }
+
         // Standard users MUST have a clinicId to prevent cross-tenant data leakage
         if (!decoded.isSuperAdmin && !decoded.clinicId) {
-            console.error('Security Breach Attempt: User logged in without clinicId context', decoded);
+            console.warn('Rejected authenticated request without tenant context');
             return res.status(403).json({ error: 'Tenant context missing. Please login again.' });
         }
 

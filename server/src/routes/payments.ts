@@ -20,6 +20,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { randomUUID } from 'crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -35,23 +36,21 @@ if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-/** Stores receipt files to local disk with a random suffix to prevent guessing. */
-const storage = multer.diskStorage({
-    destination: uploadsDir,
-    filename: (req, file, cb) => {
-        const ext = path.extname(file.originalname) || '.jpg';
-        cb(null, `receipt-${Date.now()}-${Math.random().toString(36).substring(2, 8)}${ext}`);
-    },
-});
+const ALLOWED_RECEIPT_TYPES = new Map([
+    ['.jpg', new Set(['image/jpeg'])],
+    ['.jpeg', new Set(['image/jpeg'])],
+    ['.png', new Set(['image/png'])],
+    ['.gif', new Set(['image/gif'])],
+    ['.pdf', new Set(['application/pdf'])],
+]);
 
-/** Validates that uploaded file has an allowed extension. */
+/** Buffers a validated receipt until tenant access has been confirmed. */
 const upload = multer({
-    storage,
+    storage: multer.memoryStorage(),
     limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
-    fileFilter: (req, file, cb) => {
-        const allowed = ['.jpg', '.jpeg', '.png', '.gif', '.pdf'];
+    fileFilter: (_req, file, cb) => {
         const ext = path.extname(file.originalname).toLowerCase();
-        if (allowed.includes(ext)) {
+        if (ALLOWED_RECEIPT_TYPES.get(ext)?.has(file.mimetype)) {
             cb(null, true);
         } else {
             cb(new Error('Only images (jpg, png, gif) and PDF files are allowed'));
@@ -67,6 +66,52 @@ const rejectSchema = z.object({
 /** Builds a public URL path for a stored receipt file. */
 const getReceiptUrl = (filename: string) => `/uploads/receipts/${filename}`;
 
+export const canAccessPayment = (
+    user: AuthRequest['user'],
+    sale: { clinicId: string; clientId: string | null },
+): boolean => {
+    if (!user) return false;
+    if (user.isSuperAdmin) return true;
+    if (user.roles.includes('CLIENT')) return sale.clientId === user.id;
+    return sale.clinicId === user.clinicId;
+};
+
+// ---------------------------------------------------------------------------
+// GET /:paymentId/receipt  —  Authenticated receipt viewing/downloading
+// ---------------------------------------------------------------------------
+router.get('/:paymentId/receipt', authenticate, async (req: AuthRequest, res) => {
+    try {
+        const payment = await prisma.payment.findFirst({
+            where: { id: req.params.paymentId as string },
+            select: {
+                receiptUrl: true,
+                sale: { select: { clinicId: true, clientId: true } },
+            },
+        });
+
+        if (!payment?.receiptUrl) {
+            return res.status(404).json({ error: 'Receipt not found' });
+        }
+
+        if (!canAccessPayment(req.user, payment.sale)) {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+
+        const filename = path.basename(payment.receiptUrl);
+        const receiptPath = path.join(uploadsDir, filename);
+
+        if (!fs.existsSync(receiptPath)) {
+            return res.status(404).json({ error: 'Receipt file not found' });
+        }
+
+        res.setHeader('Cache-Control', 'private, max-age=300');
+        return res.sendFile(receiptPath);
+    } catch (error) {
+        console.error('Receipt download error:', error);
+        return res.status(500).json({ error: 'Failed to load receipt' });
+    }
+});
+
 // ---------------------------------------------------------------------------
 // POST /:paymentId/receipt  —  Upload a receipt for a payment
 // ---------------------------------------------------------------------------
@@ -75,20 +120,20 @@ router.post(
     authenticate,
     upload.single('receipt'),
     async (req: AuthRequest, res) => {
+        let receiptPath: string | undefined;
         try {
             const paymentId = req.params.paymentId as string;
 
             const payment = await prisma.payment.findFirst({
                 where: { id: paymentId },
-                include: { sale: { select: { clinicId: true } } },
+                include: { sale: { select: { clinicId: true, clientId: true } } },
             });
 
             if (!payment) {
                 return res.status(404).json({ error: 'Payment not found' });
             }
 
-            // Enforce clinic-scoped access
-            if (!req.user?.isSuperAdmin && payment.sale.clinicId !== req.user?.clinicId) {
+            if (!canAccessPayment(req.user, payment.sale)) {
                 return res.status(403).json({ error: 'Access denied' });
             }
 
@@ -96,7 +141,12 @@ router.post(
                 return res.status(400).json({ error: 'Receipt file is required' });
             }
 
-            const receiptUrl = getReceiptUrl(req.file.filename);
+            const ext = path.extname(req.file.originalname).toLowerCase();
+            const filename = `receipt-${randomUUID()}${ext}`;
+            receiptPath = path.join(uploadsDir, filename);
+            await fs.promises.writeFile(receiptPath, req.file.buffer, { flag: 'wx' });
+
+            const receiptUrl = getReceiptUrl(filename);
 
             const updated = await prisma.payment.update({
                 where: { id: paymentId },
@@ -117,6 +167,9 @@ router.post(
             res.json(updated);
         } catch (error: any) {
             console.error('Receipt upload error:', error);
+            if (receiptPath) {
+                await fs.promises.unlink(receiptPath).catch(() => undefined);
+            }
             if (error.message?.includes('Only images')) {
                 return res.status(400).json({ error: error.message });
             }
@@ -350,6 +403,10 @@ router.get('/client-balance/:clientId', authenticate, async (req: AuthRequest, r
     try {
         const clientId = req.params.clientId as string;
         const clinicId = req.user?.clinicId as string;
+
+        if (req.user?.roles.includes('CLIENT') && req.user.id !== clientId) {
+            return res.status(403).json({ error: 'Access denied' });
+        }
 
         const client = await prisma.client.findFirst({
             where: { id: clientId, clinicId },

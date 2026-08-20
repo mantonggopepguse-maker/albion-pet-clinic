@@ -51,8 +51,6 @@ export const FrontDeskDashboard: React.FC<FrontDeskDashboardProps> = ({
         return "Good Evening";
     };
 
-    if (loading) return <PageLoader />;
-
     return (
         <div className="space-y-10 animate-fade-in pb-20 relative max-w-7xl mx-auto px-4 md:px-0">
             {/* Header */}
@@ -78,12 +76,12 @@ export const FrontDeskDashboard: React.FC<FrontDeskDashboardProps> = ({
             <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-4">
                 <div className="stat-widget stat-widget-amber">
                     <div className="stat-kicker">Client sign-ins</div>
-                    <div className="stat-value mt-3">{stats.clients?.today || 0}</div>
-                    <div className="mt-5 flex items-center gap-2">
-                        <div className="h-2 w-24 rounded-full bg-white/20 overflow-hidden">
-                            <div className="h-full w-3/4 rounded-full bg-white/90"></div>
+                    <div className="stat-value mt-2">{stats.clients?.today || 0}</div>
+                    <div className="mt-4 flex items-center gap-2">
+                        <div className="h-2 w-24 rounded-full bg-slate-100 border border-slate-200 overflow-hidden">
+                            <div className="h-full w-3/4 rounded-full bg-amber-500"></div>
                         </div>
-                        <span className="text-sm font-bold text-white/88">steady</span>
+                        <span className="text-xs font-extrabold text-slate-700">steady</span>
                     </div>
                     <div className="stat-footer">
                         <span>Front desk</span>
@@ -92,10 +90,10 @@ export const FrontDeskDashboard: React.FC<FrontDeskDashboardProps> = ({
                 </div>
                 <div className="stat-widget stat-widget-blue">
                     <div className="stat-kicker">Upcoming arrivals</div>
-                    <div className="stat-value mt-3">{stats.upcomingAppointments?.length || 0}</div>
-                    <div className="mt-5 grid grid-cols-4 gap-2">
+                    <div className="stat-value mt-2">{stats.upcomingAppointments?.length || 0}</div>
+                    <div className="mt-4 grid grid-cols-4 gap-1.5">
                         {Array.from({ length: 4 }).map((_, index) => (
-                            <div key={index} className={`h-10 rounded-[0.9rem] ${index < Math.min(stats.upcomingAppointments?.length || 0, 4) ? 'bg-white/24' : 'bg-black/10'}`}></div>
+                            <div key={index} className={`h-6 rounded-[0.7rem] ${index < Math.min(stats.upcomingAppointments?.length || 0, 4) ? 'bg-amber-500 shadow-sm' : 'bg-slate-100'}`}></div>
                         ))}
                     </div>
                     <div className="stat-footer">
@@ -105,8 +103,8 @@ export const FrontDeskDashboard: React.FC<FrontDeskDashboardProps> = ({
                 </div>
                 <div className="stat-widget stat-widget-red">
                     <div className="stat-kicker">Outstanding balance</div>
-                    <div className="stat-value mt-3">{settings.currencySymbol}{(stats.outstandingDebt || 0).toLocaleString()}</div>
-                    <div className="mt-5 text-lg font-bold text-white/88">91 Due</div>
+                    <div className="stat-value mt-2">{settings.currencySymbol}{(stats.outstandingDebt || 0).toLocaleString()}</div>
+                    <div className="mt-4 text-xs font-extrabold text-rose-600">Pending receipts</div>
                     <div className="stat-footer">
                         <span>Payments</span>
                         <span>Attention</span>
@@ -114,17 +112,17 @@ export const FrontDeskDashboard: React.FC<FrontDeskDashboardProps> = ({
                 </div>
                 <div className="stat-widget stat-widget-teal">
                     <div className="stat-kicker">Patients today</div>
-                    <div className="stat-value mt-3">{stats.patients?.today || 0}</div>
-                    <div className="mt-5 flex justify-between gap-2">
+                    <div className="stat-value mt-2">{stats.patients?.today || 0}</div>
+                    <div className="mt-4 flex justify-between gap-1.5">
                         {['Now', '2PM', '3PM'].map((slot) => (
-                            <div key={slot} className="flex-1 rounded-[0.9rem] bg-white/14 px-2 py-3 text-center text-xs font-extrabold uppercase tracking-[0.14em] text-white/92">
+                            <div key={slot} className="flex-1 rounded-xl bg-slate-100/90 px-1.5 py-1 text-center text-[10px] font-black uppercase tracking-[0.12em] text-slate-700 border border-slate-200/60">
                                 {slot}
                             </div>
                         ))}
                     </div>
                     <div className="stat-footer">
-                        <span>Flow</span>
-                        <span>Active day</span>
+                        <span>Intake</span>
+                        <span>Slots</span>
                     </div>
                 </div>
             </div>

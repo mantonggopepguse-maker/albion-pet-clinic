@@ -48,15 +48,14 @@ export const Expenses: React.FC<ExpensesProps> = ({
             {/* Header section */}
             <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight">Expenses</h1>
-                    <p className="text-slate-400 text-sm font-medium mt-1">Track clinic spending and overheads</p>
+                    <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Expenses</h1>
+                    <p className="text-slate-500 text-sm font-medium mt-1">Track clinic spending, operational overheads, and disbursements</p>
                 </div>
                 <button
                     onClick={onAddExpense}
-                    className="w-full sm:w-auto soft-btn-primary px-6 py-3 flex items-center justify-center gap-2 group"
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-amber-500 text-navy-950 font-extrabold hover:bg-amber-400 border border-amber-400 shadow-md transition-all flex items-center justify-center gap-2 text-xs"
                 >
-                    <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
-                    Record Expense
+                    <Plus className="w-4 h-4" /> Record Expense
                 </button>
             </div>
 

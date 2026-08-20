@@ -4,6 +4,28 @@ import './index.css';
 import App from './App';
 import { registerSW } from 'virtual:pwa-register';
 
+// Defensive guard against 3rd-party extensions (e.g. Google Translate) modifying DOM nodes and breaking React reconciliation
+if (typeof window !== 'undefined') {
+  const originalRemoveChild = Node.prototype.removeChild;
+  Node.prototype.removeChild = function <T extends Node>(child: T): T {
+    if (child.parentNode !== this) {
+      if (child.parentNode) {
+        return originalRemoveChild.call(child.parentNode, child) as T;
+      }
+      return child;
+    }
+    return originalRemoveChild.call(this, child) as T;
+  };
+
+  const originalInsertBefore = Node.prototype.insertBefore;
+  Node.prototype.insertBefore = function <T extends Node>(newNode: T, referenceNode: Node | null): T {
+    if (referenceNode && referenceNode.parentNode !== this) {
+      return originalInsertBefore.call(this, newNode, null) as T;
+    }
+    return originalInsertBefore.call(this, newNode, referenceNode) as T;
+  };
+}
+
 registerSW({ immediate: true });
 
 const clearStaleDevWorkers = async () => {

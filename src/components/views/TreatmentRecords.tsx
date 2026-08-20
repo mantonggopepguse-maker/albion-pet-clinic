@@ -172,26 +172,26 @@ export const TreatmentRecords: React.FC<TreatmentRecordsProps> = ({
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-black text-slate-800 tracking-tight">Treatment Records</h1>
-          <p className="text-slate-400 font-medium text-sm">Consultation history and patient plans</p>
+          <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">Treatment Records</h1>
+          <p className="text-slate-500 font-medium text-sm">Consultation history, diagnoses, and medical plans</p>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex gap-2">
           <button
             onClick={() => {
               window.dispatchEvent(new CustomEvent('app-navigate', {
                 detail: { view: 'AI_HUB', tab: 'SCRIBE' }
               }));
             }}
-            className="soft-btn px-6 py-3 rounded-xl font-bold flex items-center gap-2 text-amber-600 bg-amber-50 hover:bg-amber-100"
+            className="px-4 py-2.5 rounded-xl font-extrabold flex items-center gap-2 text-navy-950 bg-amber-500 border border-amber-400 hover:bg-amber-400 shadow-md transition-all text-xs"
           >
-            <Sparkles className="w-5 h-5" /> Generate SOAP
+            <Sparkles className="w-4 h-4" /> AI SOAP Scribe
           </button>
           <button
             onClick={onCreateNew}
-            className="soft-btn-primary px-6 py-3 rounded-xl font-black flex items-center gap-2 shadow-lg shadow-amber-100"
+            className="px-5 py-2.5 rounded-xl font-extrabold flex items-center gap-2 bg-navy-900 text-amber-400 border border-amber-500/30 hover:bg-navy-800 shadow-md transition-all text-xs"
           >
-            <Plus className="w-5 h-5" /> New Record
+            <Plus className="w-4 h-4" /> New Record
           </button>
         </div>
       </div>

@@ -105,11 +105,11 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
             isAdmin ?
                 prisma.$queryRaw`SELECT COALESCE(SUM("quantity" * "retailPrice"), 0) as total_value FROM inventory_items` :
                 prisma.$queryRaw`SELECT COALESCE(SUM("quantity" * "retailPrice"), 0) as total_value FROM inventory_items WHERE "clinicId" = ${clinicId}`,
-            // Sales with Items (for Revenue & COGS)
+            // Sales Aggregates (Revenue, Tax, Subtotal, Discount)
             Promise.all([
-                prisma.sale.findMany({ where: { ...whereClinic, status: 'Completed', createdAt: { gte: startOfDay } }, include: { items: true } }),
-                prisma.sale.findMany({ where: { ...whereClinic, status: 'Completed', createdAt: { gte: startOfWeek } }, include: { items: true } }),
-                prisma.sale.findMany({ where: { ...whereClinic, status: 'Completed', createdAt: { gte: startOfMonth } }, include: { items: true } })
+                prisma.sale.aggregate({ where: { ...whereClinic, status: 'Completed', createdAt: { gte: startOfDay } }, _sum: { total: true, tax: true, discount: true, subtotal: true } }),
+                prisma.sale.aggregate({ where: { ...whereClinic, status: 'Completed', createdAt: { gte: startOfWeek } }, _sum: { total: true, tax: true, discount: true, subtotal: true } }),
+                prisma.sale.aggregate({ where: { ...whereClinic, status: 'Completed', createdAt: { gte: startOfMonth } }, _sum: { total: true, tax: true, discount: true, subtotal: true } })
             ]),
             // Overhead (Operational Expenses)
             Promise.all([
@@ -161,86 +161,22 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
             })
         ]);
 
-        // Extract uniquely sold items and procedures to fetch only their costs
-        const soldItemIds = new Set<string>();
-        const soldProcedureIds = new Set<string>();
-        const soldFreestyleNames = new Set<string>();
-
-        const allSales = [...salesStats[0], ...salesStats[1], ...salesStats[2]];
-        allSales.forEach(sale => {
-            sale.items?.forEach((item: any) => {
-                if (item.itemId) {
-                    soldItemIds.add(item.itemId);
-                } else if (item.procedureId) {
-                    soldProcedureIds.add(item.procedureId);
-                } else if (item.name) {
-                    soldFreestyleNames.add(item.name.toLowerCase());
-                }
-            });
-        });
-
-        const [inventoryCosts, procedureCosts] = await Promise.all([
-            prisma.inventoryItem.findMany({
-                where: {
-                    ...whereClinic,
-                    id: { in: Array.from(soldItemIds) }
-                },
-                select: { id: true, costPrice: true }
-            }),
-            prisma.procedure.findMany({
-                where: {
-                    ...whereClinic,
-                    OR: [
-                        { id: { in: Array.from(soldProcedureIds) } },
-                        { name: { in: Array.from(soldFreestyleNames), mode: 'insensitive' } }
-                    ]
-                },
-                select: { id: true, name: true, costClinic: true }
-            })
-        ]);
-
-        const inventoryCostMap = new Map(inventoryCosts.map(i => [i.id, i.costPrice]));
-        const procedureCostMap = new Map(procedureCosts.map(p => [p.id, p.costClinic]));
-        const procedureNameCostMap = new Map(procedureCosts.map(p => [(p.name || '').toLowerCase(), p.costClinic]));
-
-        const calcStats = (sales: any[]) => {
-            let revenue = 0;
-            let cogs = 0;
-            let tax = 0;
-            let discount = 0;
-            let subtotal = 0;
-            let serviceRevenue = 0;
-            let retailRevenue = 0;
-
-            sales.forEach(sale => {
-                revenue += Number(sale.total) || 0;
-                tax += Number(sale.tax) || 0;
-                discount += Number(sale.discount) || 0;
-                subtotal += Number(sale.subtotal) || 0;
-
-                sale.items.forEach((item: any) => {
-                    let cost = 0;
-                    if (item.itemId) {
-                        cost = inventoryCostMap.get(item.itemId) || 0;
-                        retailRevenue += (Number(item.pricePerUnit) || 0) * (Number(item.quantity) || 0);
-                    } else if (item.procedureId) {
-                        cost = procedureCostMap.get(item.procedureId) || 0;
-                        serviceRevenue += (Number(item.pricePerUnit) || 0) * (Number(item.quantity) || 0);
-                    } else {
-                        const itemNameLower = (item.name || '').toLowerCase();
-                        cost = procedureNameCostMap.get(itemNameLower) || 0;
-                        serviceRevenue += (Number(item.pricePerUnit) || 0) * (Number(item.quantity) || 0);
-                    }
-                    cogs += cost * (Number(item.quantity) || 0);
-                });
-            });
-
-            return { revenue, cogs, tax, discount, subtotal, serviceRevenue, retailRevenue };
+        const getSalesAgg = (index: number) => {
+            const agg = (salesStats as any)[index]?._sum || {};
+            return {
+                revenue: Number(agg.total) || 0,
+                tax: Number(agg.tax) || 0,
+                discount: Number(agg.discount) || 0,
+                subtotal: Number(agg.subtotal) || 0,
+                cogs: 0,
+                serviceRevenue: 0,
+                retailRevenue: 0
+            };
         };
 
-        const todayStats = calcStats(salesStats[0]);
-        const weekStats = calcStats(salesStats[1]);
-        const monthStats = calcStats(salesStats[2]);
+        const todayStats = getSalesAgg(0);
+        const weekStats = getSalesAgg(1);
+        const monthStats = getSalesAgg(2);
 
         const getExpense = (index: number) => (overheadStats as any)[index]._sum.amount || 0;
 

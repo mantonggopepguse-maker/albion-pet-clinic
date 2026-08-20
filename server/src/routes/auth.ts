@@ -11,6 +11,7 @@ import { authenticate, authorize, AuthRequest } from '../middleware/auth.js';
 import { verifyFirebaseIdToken } from '../services/firebaseAdmin.js';
 import { logAudit } from '../utils/auditLogger.js';
 import { attemptClientLogin } from './clientAuth.js';
+import { getJwtExpiresIn, getJwtSecret } from '../config/env.js';
 
 const router = Router();
 
@@ -31,21 +32,9 @@ const firebaseLoginSchema = z.object({
     idToken: z.string().min(20)
 });
 
-const getJwtSecret = () => {
-    let secret = process.env.JWT_SECRET;
-    if (!secret) {
-        if (process.env.NODE_ENV === 'production') {
-            throw new Error('JWT_SECRET must be defined in production environment');
-        }
-        console.warn('WARNING: Using default JWT secret. This is insecure for production.');
-        secret = 'default-secret-change-this';
-    }
-    return secret;
-};
-
 const signStaffSession = (user: any) => {
     const secret = getJwtSecret();
-    const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
+    const expiresIn = getJwtExpiresIn();
 
     const token = jwt.sign(
         {
@@ -56,8 +45,8 @@ const signStaffSession = (user: any) => {
             clinicId: user.clinicId,
             isSuperAdmin: user.isSuperAdmin
         },
-        secret as jwt.Secret,
-        { expiresIn: expiresIn as any }
+        secret,
+        { expiresIn }
     );
 
     return {
@@ -242,6 +231,9 @@ router.post('/register', authenticate, authorize('Admin'), async (req: AuthReque
 
         res.status(201).json({ user });
     } catch (error: any) {
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: 'Invalid input', details: error.errors });
+        }
         if (error.code === 'P2002') {
             return res.status(409).json({ error: 'Email already registered' });
         }
