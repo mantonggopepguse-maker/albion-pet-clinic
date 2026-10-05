@@ -97,6 +97,7 @@ async function main() {
 
     // Create sample inventory items
     await prisma.inventoryItem.createMany({
+        skipDuplicates: true,
         data: [
             {
                 clinicId: clinic.id,
@@ -135,34 +136,39 @@ async function main() {
         ]
     });
 
-    console.log('âœ… Created sample inventory items');
+    console.log('✅ Created sample inventory items');
 
-    // Create sample procedure
-    await prisma.procedure.create({
-        data: {
-            clinicId: clinic.id,
-            name: 'IV Fluid Therapy',
-            category: 'Medical',
-            species: 'Canine & Feline',
-            costClinic: 4500,
-            costClient: 12000,
-            status: 'Active',
-            instructions: 'Monitor fluid rate closely. Ensure patient urinates regularly.',
-            medications: {
-                create: [
-                    {
-                        drug: 'Lactated Ringers',
-                        dose: '500ml',
-                        route: 'IV',
-                        freq: 'BID',
-                        duration: '2'
-                    }
-                ]
-            }
-        }
+    // Create sample procedure if not exists
+    const existingProc = await prisma.procedure.findFirst({
+        where: { clinicId: clinic.id, name: 'IV Fluid Therapy' }
     });
+    if (!existingProc) {
+        await prisma.procedure.create({
+            data: {
+                clinicId: clinic.id,
+                name: 'IV Fluid Therapy',
+                category: 'Medical',
+                species: 'Canine & Feline',
+                costClinic: 4500,
+                costClient: 12000,
+                status: 'Active',
+                instructions: 'Monitor fluid rate closely. Ensure patient urinates regularly.',
+                medications: {
+                    create: [
+                        {
+                            drug: 'Lactated Ringers',
+                            dose: '500ml',
+                            route: 'IV',
+                            freq: 'BID',
+                            duration: '2'
+                        }
+                    ]
+                }
+            }
+        });
+    }
 
-    console.log('âœ… Created sample procedure');
+    console.log('✅ Created sample procedure');
 
     console.log('\nðŸŽ‰ Seeding completed successfully!');
     console.log('\nðŸ“ Super Admin Credentials:');

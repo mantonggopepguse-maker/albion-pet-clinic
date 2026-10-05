@@ -39,7 +39,7 @@ export const AIHub: React.FC<AIHubProps> = ({ currentUser, settings, clients = [
                     </div>
                 </div>
 
-                <div className="flex gap-1">
+                <div className="flex gap-1 overflow-x-auto no-scrollbar pb-1">
                     <button
                         onClick={() => setActiveTab('SCRIBE')}
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 ${activeTab === 'SCRIBE' ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200' : 'text-slate-600 hover:bg-slate-50'

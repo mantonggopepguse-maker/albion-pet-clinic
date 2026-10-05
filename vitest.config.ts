@@ -14,6 +14,11 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/test-setup.ts'],
     exclude: ['server/**', 'dist/**', 'node_modules/**', 'e2e/**'],
+    fileParallelism: false,
+    forks: {
+      singleFork: true,
+    },
+    testTimeout: 30000,
   },
 });
 

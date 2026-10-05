@@ -2,6 +2,7 @@
  * AI client management routes.
  * @module ai-client
  */
+import crypto from 'crypto';
 import { Router } from 'express';
 import { prisma } from '../db.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
@@ -430,9 +431,53 @@ router.delete('/faqs/:id', authenticate, async (req: AuthRequest, res) => {
     }
 });
 
+export const ALLOWED_WEBHOOK_PLATFORMS = ['WHATSAPP', 'TELEGRAM', 'SMS', 'TWILIO', 'GENERIC'];
+
+export function isValidWebhookPlatform(platform: string): boolean {
+    return ALLOWED_WEBHOOK_PLATFORMS.includes((platform || '').toUpperCase());
+}
+
+export function verifyWebhookAuth(
+    secret: string,
+    rawSecretHeader?: string,
+    hubSignature?: string,
+    body?: any
+): boolean {
+    if (!secret) return true;
+    if (rawSecretHeader && rawSecretHeader === secret) return true;
+    if (hubSignature) {
+        const payload = typeof body === 'string' ? body : JSON.stringify(body || {});
+        const expectedSig = 'sha256=' + crypto.createHmac('sha256', secret).update(payload).digest('hex');
+        try {
+            return hubSignature.length === expectedSig.length && crypto.timingSafeEqual(Buffer.from(hubSignature), Buffer.from(expectedSig));
+        } catch {
+            return false;
+        }
+    }
+    return false;
+}
+
 // Process inbound message (Mock Webhook / Simulated)
 router.post('/webhook/:platform', async (req, res) => {
     const { platform } = req.params;
+
+    if (!isValidWebhookPlatform(platform)) {
+        return res.status(400).json({ error: `Unsupported platform: ${platform}. Allowed: ${ALLOWED_WEBHOOK_PLATFORMS.join(', ')}` });
+    }
+
+    const webhookSecret = process.env.WEBHOOK_SECRET;
+    if (webhookSecret) {
+        const authorized = verifyWebhookAuth(
+            webhookSecret,
+            req.headers['x-webhook-secret'] as string | undefined,
+            req.headers['x-hub-signature-256'] as string | undefined,
+            req.body
+        );
+
+        if (!authorized) {
+            return res.status(401).json({ error: 'Unauthorized: Invalid webhook secret or signature' });
+        }
+    }
 
     const from = req.body.from || req.body.From || req.body.sender;
     const content = req.body.content || req.body.Body || req.body.text;
@@ -443,6 +488,13 @@ router.post('/webhook/:platform', async (req, res) => {
     }
 
     try {
+        const clinic = await prisma.clinic.findUnique({
+            where: { id: clinicId as string }
+        });
+        if (!clinic) {
+            return res.status(404).json({ error: 'Clinic not found' });
+        }
+
         let conversation = await prisma.aIConversation.findFirst({
             where: {
                 clinicId: clinicId as string,

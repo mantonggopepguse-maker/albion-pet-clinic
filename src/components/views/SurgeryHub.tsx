@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Patient, AppView } from '../../types';
-import { Activity, HeartPulse, Clock, ChevronRight, CheckCircle2, AlertTriangle, Timer, Stethoscope, Plus, Save, Calculator } from 'lucide-react';
+import { Activity, HeartPulse, Clock, ChevronRight, CheckCircle2, AlertTriangle, Timer, Stethoscope, Plus, Save, Calculator, X } from 'lucide-react';
 import { api } from '../../services/apiService';
 import PageLoader from '../shared/PageLoader';
+import { toast } from 'sonner';
 
 interface Surgery {
     id: string;
@@ -24,6 +25,16 @@ export const SurgeryHub: React.FC<SurgeryHubProps> = ({ onNavigate }) => {
     const [loading, setLoading] = useState(true);
     const [selectedSurgery, setSelectedSurgery] = useState<Surgery | null>(null);
     const [showNewSurgeryModal, setShowNewSurgeryModal] = useState(false);
+    const [patientList, setPatientList] = useState<any[]>([]);
+    const [staffList, setStaffList] = useState<any[]>([]);
+    const [isCreatingSurgery, setIsCreatingSurgery] = useState(false);
+    const [newSurgeryForm, setNewSurgeryForm] = useState({
+        patientId: '',
+        surgeonId: '',
+        anesthetistId: '',
+        asaScore: '1',
+        preMeds: ''
+    });
 
     // Monitoring Form State
     const [intervalForm, setIntervalForm] = useState({
@@ -59,6 +70,62 @@ export const SurgeryHub: React.FC<SurgeryHubProps> = ({ onNavigate }) => {
         }
     };
 
+    const handleOpenNewSurgery = async () => {
+        try {
+            const [patients, staff] = await Promise.all([
+                api.patients.getAll().catch(() => []),
+                api.staff.getAll().catch(() => [])
+            ]);
+            setPatientList(patients || []);
+            setStaffList(staff || []);
+            if (patients && patients.length > 0) {
+                setNewSurgeryForm(prev => ({
+                    ...prev,
+                    patientId: prev.patientId || patients[0].id,
+                    surgeonId: prev.surgeonId || (staff && staff.length > 0 ? staff[0].id : '')
+                }));
+            }
+            setShowNewSurgeryModal(true);
+        } catch (e) {
+            toast.error("Failed to load patient and staff records");
+        }
+    };
+
+    const handleCreateSurgery = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newSurgeryForm.patientId || !newSurgeryForm.surgeonId) {
+            toast.error("Please select both a patient and a primary surgeon");
+            return;
+        }
+        setIsCreatingSurgery(true);
+        try {
+            const created = await api.post('/surgeries', {
+                patientId: newSurgeryForm.patientId,
+                surgeonId: newSurgeryForm.surgeonId,
+                anesthetistId: newSurgeryForm.anesthetistId || undefined,
+                asaScore: newSurgeryForm.asaScore,
+                preMeds: newSurgeryForm.preMeds || undefined
+            });
+            toast.success("Surgical session initiated");
+            setShowNewSurgeryModal(false);
+            setNewSurgeryForm({
+                patientId: '',
+                surgeonId: '',
+                anesthetistId: '',
+                asaScore: '1',
+                preMeds: ''
+            });
+            await fetchSurgeries();
+            if (created?.id) {
+                setSelectedSurgery(created);
+            }
+        } catch (error) {
+            toast.error("Failed to schedule surgery");
+        } finally {
+            setIsCreatingSurgery(false);
+        }
+    };
+
     const handleLogInterval = async () => {
         if (!selectedSurgery) return;
         try {
@@ -74,9 +141,10 @@ export const SurgeryHub: React.FC<SurgeryHubProps> = ({ onNavigate }) => {
                 fluids: '',
                 notes: ''
             });
+            toast.success("Vitals interval recorded");
             fetchSurgeries();
         } catch (error) {
-            alert("Failed to log interval");
+            toast.error("Failed to log interval");
         }
     };
 
@@ -85,10 +153,11 @@ export const SurgeryHub: React.FC<SurgeryHubProps> = ({ onNavigate }) => {
         if (!window.confirm("Are you sure you want to end this surgical session?")) return;
         try {
             await api.post(`/surgeries/${selectedSurgery.id}/complete`, {});
+            toast.success("Surgical session completed");
             setSelectedSurgery(null);
             fetchSurgeries();
         } catch (error) {
-            alert("Failed to complete surgery");
+            toast.error("Failed to complete surgery");
         }
     };
 
@@ -115,7 +184,7 @@ export const SurgeryHub: React.FC<SurgeryHubProps> = ({ onNavigate }) => {
                         <Calculator className="w-5 h-5" /> Calculators
                     </button>
                     <button 
-                        onClick={() => onNavigate('PATIENTS')}
+                        onClick={handleOpenNewSurgery}
                         className="soft-btn px-8 py-4 bg-rose-600 text-white border-rose-500 hover:bg-rose-700 font-black flex items-center gap-2 group"
                     >
                         <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" /> New Surgery
@@ -317,6 +386,125 @@ export const SurgeryHub: React.FC<SurgeryHubProps> = ({ onNavigate }) => {
                     )}
                 </div>
             </div>
+
+            {/* New Surgery Modal */}
+            {showNewSurgeryModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in">
+                    <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden border border-slate-100 animate-in zoom-in-95">
+                        <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                            <div>
+                                <h3 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                                    <Activity className="w-6 h-6 text-rose-600" /> New Surgical Session
+                                </h3>
+                                <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-1">Schedule & Initialize Theater Entry</p>
+                            </div>
+                            <button 
+                                onClick={() => setShowNewSurgeryModal(false)}
+                                className="p-2.5 hover:bg-white rounded-2xl transition-all text-slate-400 hover:text-slate-600 shadow-sm"
+                            >
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleCreateSurgery} className="p-8 space-y-5">
+                            <div>
+                                <label className="text-xs font-black text-slate-400 uppercase tracking-wider block mb-2">Patient *</label>
+                                <select 
+                                    required
+                                    value={newSurgeryForm.patientId}
+                                    onChange={e => setNewSurgeryForm({ ...newSurgeryForm, patientId: e.target.value })}
+                                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 focus:ring-4 focus:ring-rose-500/10 outline-none"
+                                >
+                                    <option value="">Select a Patient</option>
+                                    {patientList.map(p => (
+                                        <option key={p.id} value={p.id}>
+                                            {p.name} ({p.species}{p.breed ? ` - ${p.breed}` : ''})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-xs font-black text-slate-400 uppercase tracking-wider block mb-2">Primary Surgeon *</label>
+                                    <select 
+                                        required
+                                        value={newSurgeryForm.surgeonId}
+                                        onChange={e => setNewSurgeryForm({ ...newSurgeryForm, surgeonId: e.target.value })}
+                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 focus:ring-4 focus:ring-rose-500/10 outline-none"
+                                    >
+                                        <option value="">Select Surgeon</option>
+                                        {staffList.map(s => (
+                                            <option key={s.id} value={s.id}>
+                                                {s.name || `${s.firstName || ''} ${s.lastName || ''}`.trim() || 'Staff'}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="text-xs font-black text-slate-400 uppercase tracking-wider block mb-2">Anesthetist</label>
+                                    <select 
+                                        value={newSurgeryForm.anesthetistId}
+                                        onChange={e => setNewSurgeryForm({ ...newSurgeryForm, anesthetistId: e.target.value })}
+                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 focus:ring-4 focus:ring-rose-500/10 outline-none"
+                                    >
+                                        <option value="">None / Solo</option>
+                                        {staffList.map(s => (
+                                            <option key={s.id} value={s.id}>
+                                                {s.name || `${s.firstName || ''} ${s.lastName || ''}`.trim() || 'Staff'}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-black text-slate-400 uppercase tracking-wider block mb-2">ASA Physical Status</label>
+                                <select 
+                                    value={newSurgeryForm.asaScore}
+                                    onChange={e => setNewSurgeryForm({ ...newSurgeryForm, asaScore: e.target.value })}
+                                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 focus:ring-4 focus:ring-rose-500/10 outline-none"
+                                >
+                                    <option value="1">ASA I - Normal healthy patient</option>
+                                    <option value="2">ASA II - Patient with mild systemic disease</option>
+                                    <option value="3">ASA III - Patient with severe systemic disease</option>
+                                    <option value="4">ASA IV - Severe systemic disease that is a constant threat to life</option>
+                                    <option value="5">ASA V - Moribund patient not expected to survive</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-black text-slate-400 uppercase tracking-wider block mb-2">Pre-Medication / Protocol Notes</label>
+                                <textarea 
+                                    rows={3}
+                                    value={newSurgeryForm.preMeds}
+                                    onChange={e => setNewSurgeryForm({ ...newSurgeryForm, preMeds: e.target.value })}
+                                    placeholder="e.g. Acepromazine 0.02 mg/kg + Butorphanol 0.2 mg/kg IM"
+                                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 focus:ring-4 focus:ring-rose-500/10 outline-none resize-none"
+                                />
+                            </div>
+
+                            <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowNewSurgeryModal(false)}
+                                    className="flex-1 py-3.5 bg-slate-100 text-slate-600 rounded-2xl font-black text-xs uppercase tracking-wider hover:bg-slate-200 transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isCreatingSurgery}
+                                    className="flex-1 py-3.5 bg-rose-600 text-white rounded-2xl font-black text-xs uppercase tracking-wider hover:bg-rose-700 transition-all shadow-lg shadow-rose-200 disabled:opacity-50"
+                                >
+                                    {isCreatingSurgery ? 'Starting...' : 'Start Session'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

@@ -105,11 +105,20 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
     }
 });
 
+const referralStatusSchema = z.object({
+  status: z.enum(['Pending', 'Reviewed', 'Accepted', 'Rejected', 'Completed']),
+});
+
 // Update referral status
 router.patch('/:id/status', authenticate, async (req: AuthRequest, res) => {
     try {
         const id = req.params.id as string;
         const clinicId = req.user?.clinicId as string;
+
+        const parsed = referralStatusSchema.safeParse(req.body);
+        if (!parsed.success) {
+            return res.status(400).json({ error: 'Validation failed', details: parsed.error.issues });
+        }
 
         // Verify referral belongs to this clinic
         const referral = await prisma.referral.findFirst({
@@ -122,12 +131,12 @@ router.patch('/:id/status', authenticate, async (req: AuthRequest, res) => {
 
         const updated = await prisma.referral.update({
             where: { id },
-            data: { status: req.body.status }
+            data: { status: parsed.data.status }
         });
 
         if (req.user?.id) {
             await logAudit(req.user.id, 'REFERRAL', 'UPDATE_STATUS', 
-                `Updated referral ${id} status to ${req.body.status}`, clinicId, req.user.name);
+                `Updated referral ${id} status to ${parsed.data.status}`, clinicId, req.user.name);
         }
 
         res.json(updated);

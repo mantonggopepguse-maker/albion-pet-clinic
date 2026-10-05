@@ -3,6 +3,8 @@ node_modules
 .gitignore
 *.md
 dist
+server/node_modules
+server/dist
 .env
 .env.local
 .env.*.local

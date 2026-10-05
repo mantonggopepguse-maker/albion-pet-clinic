@@ -19,6 +19,11 @@ const reminderLimiter = rateLimit({
 // Define the Cloud Scheduler trigger point
 // Can be called via GET /api/trigger-reminders
 router.get('/', reminderLimiter, async (req, res) => {
+    const cronSecret = process.env.CRON_SECRET;
+    if (cronSecret && req.headers['x-cron-secret'] !== cronSecret) {
+        return res.status(403).json({ error: 'Forbidden' });
+    }
+
     try {
         console.log('External trigger received for reminder processing.');
         // Don't await directly if it shouldn't block the response, but

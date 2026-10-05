@@ -191,14 +191,41 @@ router.put('/clinics/:id', authenticate, superAdminOnly, async (req: AuthRequest
     }
 });
 
-// Delete a clinic
+// Delete or suspend a clinic
 router.delete('/clinics/:id', authenticate, superAdminOnly, async (req: AuthRequest, res) => {
     try {
         const { id } = req.params;
-        await prisma.clinic.delete({ where: { id: id as string } });
+        const targetId = id as string;
+
+        const clinic = await prisma.clinic.findUnique({ where: { id: targetId } });
+        if (!clinic) {
+            return res.status(404).json({ error: 'Clinic not found' });
+        }
+
+        // Check if clinic has active dependent data
+        const [userCount, saleCount] = await Promise.all([
+            prisma.user.count({ where: { clinicId: targetId } }),
+            prisma.sale.count({ where: { clinicId: targetId } }).catch(() => 0),
+        ]);
+
+        if (userCount > 0 || saleCount > 0) {
+            await prisma.clinic.update({
+                where: { id: targetId },
+                data: { status: 'Suspended' },
+            });
+            await logAudit(
+                req.user!.id,
+                'SuperAdmin',
+                'Clinic Suspension',
+                `Suspended clinic ${clinic.name} (${targetId}) due to active data (${userCount} users, ${saleCount} sales)`
+            );
+            return res.json({ message: 'Clinic has active records and was suspended instead of permanently deleted', status: 'Suspended' });
+        }
+
+        await prisma.clinic.delete({ where: { id: targetId } });
         
         // Log this action
-        await logAudit(req.user!.id, 'SuperAdmin', 'Clinic Deletion', `Permanently deleted clinic ID ${id}`);
+        await logAudit(req.user!.id, 'SuperAdmin', 'Clinic Deletion', `Permanently deleted clinic ${clinic.name} (${targetId})`);
 
         res.json({ message: 'Clinic deleted' });
     } catch (error) {

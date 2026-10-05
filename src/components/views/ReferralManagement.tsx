@@ -119,7 +119,7 @@ export const ReferralManagement: React.FC<ReferralManagementProps> = ({ onNaviga
                                 </div>
                                 <div className="space-y-1">
                                     <p className="text-xs font-bold text-slate-500">Owner: {referral.clientName}</p>
-                                    <p className="text-xs font-bold text-slate-400">Recieved: {new Date(referral.createdAt).toLocaleDateString()}</p>
+                                    <p className="text-xs font-bold text-slate-400">Received: {new Date(referral.createdAt).toLocaleDateString()}</p>
                                 </div>
                             </button>
                         ))

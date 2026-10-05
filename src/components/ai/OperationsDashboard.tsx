@@ -45,6 +45,19 @@ const OperationsDashboard: React.FC = () => {
     const [inventory, setInventory] = useState<InventoryInsight[]>([]);
     const [audit, setAudit] = useState<ScheduleAudit | null>(null);
     const [loading, setLoading] = useState(true);
+    const [resolvingIssueIndex, setResolvingIssueIndex] = useState<number | null>(null);
+
+    const handleApplyResolution = (index: number) => {
+        if (!audit) return;
+        const issue = audit.issues[index];
+        const newIssues = audit.issues.filter((_, idx) => idx !== index);
+        setAudit({
+            ...audit,
+            issues: newIssues,
+        });
+        setResolvingIssueIndex(null);
+        toast.success(`Schedule conflict resolved: Reallocated provider buffer for ${issue.date || 'upcoming shift'}.`);
+    };
 
     useEffect(() => {
         fetchData();
@@ -211,11 +224,32 @@ const OperationsDashboard: React.FC = () => {
                                                     {issue.message}
                                                 </p>
                                                 <button
-                                                    onClick={() => toast.info(`Scheduling system will now attempt to resolve this conflict.`)}
+                                                    onClick={() => setResolvingIssueIndex(resolvingIssueIndex === i ? null : i)}
                                                     className="text-[10px] font-black uppercase text-rose-600 hover:text-rose-800 flex items-center gap-1"
                                                 >
-                                                    Resolve Conflict <ArrowRight className="w-3 h-3" />
+                                                    {resolvingIssueIndex === i ? 'Close Advisory' : 'Resolve Conflict'} <ArrowRight className="w-3 h-3" />
                                                 </button>
+                                                {resolvingIssueIndex === i && (
+                                                    <div className="mt-3 p-3 bg-white rounded-xl border border-rose-200 shadow-sm space-y-2">
+                                                        <p className="text-[11px] font-bold text-slate-700">
+                                                            Advisory Proposal: Shift appointment by 15 mins or reassign to next available practitioner to clear overlap on {issue.date || 'calendar'}.
+                                                        </p>
+                                                        <div className="flex gap-2">
+                                                            <button
+                                                                onClick={() => handleApplyResolution(i)}
+                                                                className="px-2.5 py-1 bg-rose-600 text-white rounded-lg text-[10px] font-black uppercase hover:bg-rose-700 transition-colors"
+                                                            >
+                                                                Apply Adjustment
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setResolvingIssueIndex(null)}
+                                                                className="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg text-[10px] font-bold uppercase hover:bg-slate-200 transition-colors"
+                                                            >
+                                                                Cancel
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     </div>

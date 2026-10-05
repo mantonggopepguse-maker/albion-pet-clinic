@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, Plus, X, CheckCircle2, AlertCircle, Search, BedDouble, User, Calendar, DollarSign, RefreshCw } from 'lucide-react';
+import { Activity, Plus, X, CheckCircle2, AlertCircle, Search, BedDouble, User, Calendar, DollarSign, RefreshCw, Heart } from 'lucide-react';
 import { api } from '../../services/apiService';
-import { Hospitalization as HospitalizationType, Kennel, ClinicSettings, User as UserType } from '../../types';
+import { Hospitalization as HospitalizationType, Kennel, ClinicSettings, User as UserType, Pet } from '../../types';
 import { toast } from 'sonner';
 
 interface HospitalizationProps {
@@ -24,18 +24,30 @@ export const Hospitalization: React.FC<HospitalizationProps> = ({ settings, curr
   const [newKennelCharge, setNewKennelCharge] = useState(0);
   const [newKennelCategory, setNewKennelCategory] = useState('General');
 
+  // Admit patient modal state
+  const [showAdmitModal, setShowAdmitModal] = useState(false);
+  const [admitPatientId, setAdmitPatientId] = useState('');
+  const [admitKennelId, setAdmitKennelId] = useState('');
+  const [admitReason, setAdmitReason] = useState('');
+  const [admitEstimatedCost, setAdmitEstimatedCost] = useState<number>(0);
+  const [isAdmitting, setIsAdmitting] = useState(false);
+  const [patients, setPatients] = useState<Pet[]>([]);
+  const [patientSearch, setPatientSearch] = useState('');
+
   // Discharge confirmation
   const [dischargingId, setDischargingId] = useState<string | null>(null);
 
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [kennelsData, roundsData] = await Promise.all([
+      const [kennelsData, roundsData, patientsData] = await Promise.all([
         api.hospitalization.getKennels(),
-        api.hospitalization.getRounds().catch(() => [])
+        api.hospitalization.getRounds().catch(() => []),
+        api.patients.getAll().catch(() => [])
       ]);
       setKennels(kennelsData);
       setActiveHospitalizations(roundsData);
+      setPatients(patientsData);
     } catch (error) {
       toast.error('Failed to load hospitalization data');
     } finally {
@@ -46,6 +58,34 @@ export const Hospitalization: React.FC<HospitalizationProps> = ({ settings, curr
   useEffect(() => {
     loadData();
   }, []);
+
+  const handleAdmitPatient = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!admitPatientId || !admitKennelId) {
+      toast.error('Please select both a patient and an available kennel');
+      return;
+    }
+    setIsAdmitting(true);
+    try {
+      await api.hospitalization.admit({
+        patientId: admitPatientId,
+        kennelId: admitKennelId,
+        reason: admitReason.trim() || undefined,
+        estimatedCost: admitEstimatedCost > 0 ? admitEstimatedCost : undefined,
+      });
+      toast.success('Patient admitted to ward successfully');
+      setShowAdmitModal(false);
+      setAdmitPatientId('');
+      setAdmitKennelId('');
+      setAdmitReason('');
+      setAdmitEstimatedCost(0);
+      loadData();
+    } catch (error: any) {
+      toast.error(error?.data?.details || error?.message || 'Failed to admit patient');
+    } finally {
+      setIsAdmitting(false);
+    }
+  };
 
   const handleCreateKennel = async () => {
     if (!newKennelName.trim()) return;
@@ -109,6 +149,15 @@ export const Hospitalization: React.FC<HospitalizationProps> = ({ settings, curr
           <p className="text-sm text-slate-400 font-medium mt-1">Manage kennels and active admissions</p>
         </div>
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              setAdmitKennelId('');
+              setShowAdmitModal(true);
+            }}
+            className="flex items-center gap-2 px-5 py-2.5 bg-rose-600 text-white rounded-xl text-xs font-black hover:bg-rose-700 transition-all shadow-lg active:scale-95"
+          >
+            <Plus className="w-4 h-4" /> Admit Patient
+          </button>
           <button
             onClick={() => setShowNewKennel(true)}
             className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-xl text-xs font-black hover:bg-slate-800 transition-all shadow-lg"
@@ -224,6 +273,19 @@ export const Hospitalization: React.FC<HospitalizationProps> = ({ settings, curr
                       <Calendar className="w-3 h-3" />
                       {new Date(activeHosp.admissionDate).toLocaleDateString()}
                     </div>
+                  </div>
+                )}
+                {kennel.status === 'Available' && (
+                  <div className="mt-4 pt-3 border-t border-slate-100 flex justify-end">
+                    <button
+                      onClick={() => {
+                        setAdmitKennelId(kennel.id);
+                        setShowAdmitModal(true);
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200/80 rounded-xl text-xs font-bold hover:bg-emerald-100 transition-all active:scale-95 shadow-xs"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Admit Patient
+                    </button>
                   </div>
                 )}
               </div>

@@ -47,8 +47,8 @@ export default {
         }
       },
       fontFamily: {
-        heading: ['Outfit', 'Public Sans', 'sans-serif'],
-        sans: ['Public Sans', 'sans-serif'],
+        heading: ['Plus Jakarta Sans', 'Outfit', 'sans-serif'],
+        sans: ['Plus Jakarta Sans', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-out',

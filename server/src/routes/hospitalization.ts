@@ -74,6 +74,15 @@ const prescriptionUpdateSchema = z.object({
 
 const router = Router();
 
+const verifyHospitalizationClinic = async (id: string, req: AuthRequest) => {
+    if (req.user?.isSuperAdmin) {
+        return prisma.hospitalization.findUnique({ where: { id } });
+    }
+    return prisma.hospitalization.findFirst({
+        where: { id, clinicId: req.user?.clinicId as string }
+    });
+};
+
 // ===========================================================================
 // KENNELS
 // ===========================================================================
@@ -522,6 +531,10 @@ router.post('/:id/flowsheet', authenticate, async (req: AuthRequest, res) => {
 router.get('/:id/flowsheet', authenticate, async (req: AuthRequest, res) => {
     try {
         const { id } = req.params;
+        const hosp = await verifyHospitalizationClinic(id as string, req);
+        if (!hosp) {
+            return res.status(404).json({ error: 'Hospitalization not found in this clinic' });
+        }
         const entries = await prisma.flowsheetEntry.findMany({
             where: { hospitalizationId: id as string },
             include: { staff: { select: { id: true, name: true } } },
@@ -548,6 +561,10 @@ router.post('/:id/notes', authenticate, async (req: AuthRequest, res) => {
     const { subjective, objective, assessment, plan, date } = parsed.data;
     try {
         const { id } = req.params;
+        const hosp = await verifyHospitalizationClinic(id as string, req);
+        if (!hosp) {
+            return res.status(404).json({ error: 'Hospitalization not found in this clinic' });
+        }
         const { id: vetId } = req.user!;
 
         const note = await prisma.hospitalizationNote.create({
@@ -585,6 +602,10 @@ router.post('/:id/notes', authenticate, async (req: AuthRequest, res) => {
 router.get('/:id/notes', authenticate, async (req: AuthRequest, res) => {
     try {
         const { id } = req.params;
+        const hosp = await verifyHospitalizationClinic(id as string, req);
+        if (!hosp) {
+            return res.status(404).json({ error: 'Hospitalization not found in this clinic' });
+        }
         const notes = await prisma.hospitalizationNote.findMany({
             where: { hospitalizationId: id as string },
             include: { vet: { select: { id: true, name: true } } },
@@ -611,6 +632,10 @@ router.post('/:id/prescriptions', authenticate, async (req: AuthRequest, res) =>
     const { drugName, dose, route, frequency, inventoryItemId } = parsed.data;
     try {
         const { id } = req.params;
+        const hosp = await verifyHospitalizationClinic(id as string, req);
+        if (!hosp) {
+            return res.status(404).json({ error: 'Hospitalization not found in this clinic' });
+        }
         const { id: vetId } = req.user!;
 
         const prescription = await prisma.hospitalizationPrescription.create({
@@ -636,6 +661,10 @@ router.post('/:id/prescriptions', authenticate, async (req: AuthRequest, res) =>
 router.get('/:id/prescriptions', authenticate, async (req: AuthRequest, res) => {
     try {
         const { id } = req.params;
+        const hosp = await verifyHospitalizationClinic(id as string, req);
+        if (!hosp) {
+            return res.status(404).json({ error: 'Hospitalization not found in this clinic' });
+        }
         const prescriptions = await prisma.hospitalizationPrescription.findMany({
             where: { hospitalizationId: id as string },
             include: { vet: { select: { id: true, name: true } } },
@@ -657,13 +686,26 @@ router.put('/:id/prescriptions/:prescriptionId', authenticate, async (req: AuthR
     }
     const { status } = parsed.data;
     try {
-        const { prescriptionId } = req.params;
+        const { id, prescriptionId } = req.params;
 
-        const prescription = await prisma.hospitalizationPrescription.update({
+        // Verify prescription belongs to this hospitalization and clinic
+        const prescription = await prisma.hospitalizationPrescription.findFirst({
+            where: {
+                id: prescriptionId as string,
+                hospitalizationId: id as string,
+                hospitalization: req.user?.isSuperAdmin ? {} : { clinicId: req.user?.clinicId as string }
+            }
+        });
+
+        if (!prescription) {
+            return res.status(404).json({ error: 'Prescription not found in this clinic' });
+        }
+
+        const updated = await prisma.hospitalizationPrescription.update({
             where: { id: prescriptionId as string },
             data: { status },
         });
-        res.json(prescription);
+        res.json(updated);
     } catch (error) {
         console.error('Error updating prescription:', error);
         res.status(500).json({ error: 'Failed to update prescription' });

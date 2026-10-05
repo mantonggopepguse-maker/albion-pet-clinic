@@ -90,6 +90,9 @@ const app = express();
 const PORT = Number(process.env.PORT) || 8080;
 const defaultAllowedOrigins = [
     'https://albionpetclinic-180033031286.us-central1.run.app',
+    'https://albionpetclinic-wsd7idcgtq-uc.a.run.app',
+    'https://albion-os-180033031286.us-central1.run.app',
+    'https://albion-os-wsd7idcgtq-uc.a.run.app',
     'https://purplevets.albionpetclinic.com',
     'https://app.albionpetclinic.com',
     'https://albionpetclinic.com',
@@ -104,6 +107,32 @@ const configuredAllowedOrigins = (process.env.ALLOWED_ORIGINS || '')
 const allowedOrigins = configuredAllowedOrigins.length > 0
     ? configuredAllowedOrigins
     : defaultAllowedOrigins;
+
+const isOriginAllowed = (origin?: string): boolean => {
+    if (!origin) return true; // same-origin, curl, server-to-server
+    if (allowedOrigins.includes(origin)) return true;
+    try {
+        const parsed = new URL(origin);
+        // Allow Albion Cloud Run deployment domains (*.run.app)
+        if (parsed.hostname.endsWith('.run.app')) {
+            if (
+                parsed.hostname.includes('albion') ||
+                parsed.hostname.startsWith('albion-') ||
+                parsed.hostname.startsWith('albionpetclinic-')
+            ) {
+                return true;
+            }
+            return false;
+        }
+        // Allow local development
+        if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') {
+            return true;
+        }
+    } catch {
+        return false;
+    }
+    return false;
+};
 
 // Enable 'trust proxy' for Cloud Run / Rate Limiting
 app.set('trust proxy', 1);
@@ -121,6 +150,7 @@ app.use(helmet({
                 'https://*.googleapis.com',
                 'https://*.firebaseio.com',
                 'wss://*.firebaseio.com',
+                'https://*.run.app',
             ],
             fontSrc: ["'self'", 'data:', 'https:'],
             formAction: ["'self'"],
@@ -138,27 +168,13 @@ app.use(helmet({
     },
 }));
 
-// Middleware
-app.use(cors({
-    origin: (origin, callback) => {
-        // Requests without an Origin header are same-origin/server-to-server.
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-            return;
-        }
-
-        const corsError = new Error('Origin is not allowed by CORS') as Error & { status?: number };
-        corsError.status = 403;
-        callback(corsError);
-    },
-    credentials: true
-}));
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
 // Cache content-hashed Vite assets aggressively; revalidate HTML/PWA metadata.
+// Mounted before API CORS so static JS/CSS assets are never rejected with 403.
 const frontendPath = path.join(__dirname, '../../dist');
-app.use('/assets', express.static(path.join(frontendPath, 'assets'), {
+app.use('/assets', (req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    next();
+}, express.static(path.join(frontendPath, 'assets'), {
     maxAge: '1y',
     immutable: true,
     etag: true,
@@ -175,6 +191,23 @@ app.use(express.static(frontendPath, {
 
 // Uploaded records are available only through authenticated API routes.
 app.use('/uploads', (_req, res) => res.status(404).json({ error: 'Not found' }));
+
+// Middleware
+app.use(cors({
+    origin: (origin, callback) => {
+        if (isOriginAllowed(origin)) {
+            callback(null, true);
+            return;
+        }
+
+        const corsError = new Error('Origin is not allowed by CORS') as Error & { status?: number };
+        corsError.status = 403;
+        callback(corsError);
+    },
+    credentials: true
+}));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Request logging middleware (Development only to save Cloud Logging costs)
 if (process.env.NODE_ENV !== 'production') {
@@ -252,7 +285,19 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/cash-reconciliation', cashReconciliationRoutes);
 app.use('/api/firebase', firebaseRoutes);
 
-// Error handling middleware
+// 404 handler for API routes
+app.use('/api', (req, res) => {
+    res.status(404).json({ error: 'API route not found' });
+});
+
+// Fallback to React app for all other routes (SPA support)
+app.get('*', (req, res) => {
+    res.sendFile(path.join(frontendPath, 'index.html'), {
+        headers: { 'Cache-Control': 'no-cache' },
+    });
+});
+
+// Error handling middleware (must be registered last)
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
     console.error('Error:', err);
 
@@ -266,18 +311,6 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
     res.status(status).json({
         error: clientMessage,
         ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
-    });
-});
-
-// 404 handler for API routes
-app.use('/api', (req, res) => {
-    res.status(404).json({ error: 'API route not found' });
-});
-
-// Fallback to React app for all other routes (SPA support)
-app.get('*', (req, res) => {
-    res.sendFile(path.join(frontendPath, 'index.html'), {
-        headers: { 'Cache-Control': 'no-cache' },
     });
 });
 

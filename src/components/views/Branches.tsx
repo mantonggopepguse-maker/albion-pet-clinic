@@ -3,7 +3,12 @@ import { Building2, Plus, MapPin, Phone, Users, Calendar, ArrowRight, ShieldChec
 import { api } from '../../services/apiService';
 import { toast } from 'sonner';
 
-export const Branches: React.FC = () => {
+interface BranchesProps {
+  onSelectBranch?: (branch: any) => void;
+  onNavigate?: (view: any) => void;
+}
+
+export const Branches: React.FC<BranchesProps> = ({ onSelectBranch, onNavigate }) => {
   const [branches, setBranches] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -58,11 +63,11 @@ export const Branches: React.FC = () => {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      <div className="flex justify-between items-end bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 bg-white p-5 sm:p-8 rounded-[2rem] sm:rounded-[2.5rem] border border-slate-100 shadow-sm">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight flex items-center gap-4">
-            <div className="w-12 h-12 bg-amber-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-amber-100">
-               <Building2 className="w-6 h-6" />
+          <h1 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3 sm:gap-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-amber-500 rounded-xl sm:rounded-2xl flex items-center justify-center text-white shadow-lg shadow-amber-100 flex-shrink-0">
+               <Building2 className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
             Hospital Branches
           </h1>
@@ -132,8 +137,15 @@ export const Branches: React.FC = () => {
             </div>
 
             <div className="px-8 pb-8">
-               <button className="w-full py-3 bg-white border border-slate-200 text-slate-600 font-black text-xs uppercase tracking-widest rounded-xl hover:bg-slate-50 transition-all active:scale-95">
-                  Launch Branch Dashboard
+               <button 
+                  onClick={() => {
+                     toast.success(`Active branch switched to ${branch.name}`);
+                     onSelectBranch?.(branch);
+                     onNavigate?.('DASHBOARD');
+                  }}
+                  className="w-full py-3 bg-white border border-slate-200 text-slate-600 font-black text-xs uppercase tracking-widest rounded-xl hover:bg-slate-50 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-sm"
+               >
+                  <ExternalLink className="w-4 h-4" /> Launch Branch Dashboard
                </button>
             </div>
           </div>

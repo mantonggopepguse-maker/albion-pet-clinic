@@ -7,6 +7,7 @@ const createTestUser = (roles: User['roles'], isSuperAdmin = false): User => ({
   email: 'vet@albionclinic.ng',
   name: 'Dr. Chioma Okeke',
   roles,
+  status: 'Active',
   clinicId: 'clinic-lagos-1',
   isSuperAdmin,
 });

@@ -89,13 +89,13 @@ export const ClinicalCalculators: React.FC = () => {
     return (
         <div className="space-y-8 animate-fade-in max-w-5xl mx-auto pb-20">
             {/* Header */}
-            <div className="flex justify-between items-center bg-white p-6 rounded-[2.5rem] shadow-xl shadow-slate-100 border border-slate-100">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 sm:p-6 rounded-[2rem] sm:rounded-[2.5rem] shadow-xl shadow-slate-100 border border-slate-100">
                 <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-amber-600 rounded-3xl flex items-center justify-center text-white shadow-lg shadow-amber-100">
-                        <Calculator className="w-7 h-7" />
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 bg-amber-600 rounded-2xl sm:rounded-3xl flex items-center justify-center text-white shadow-lg shadow-amber-100 flex-shrink-0">
+                        <Calculator className="w-6 h-6 sm:w-7 sm:h-7" />
                     </div>
                     <div>
-                        <h1 className="text-3xl font-black text-slate-800 tracking-tight">Clinical Intelligence</h1>
+                        <h1 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight">Clinical Intelligence</h1>
                         <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest flex items-center gap-2">
                              Precision Veterinary Calculators
                         </p>
@@ -103,31 +103,31 @@ export const ClinicalCalculators: React.FC = () => {
                 </div>
                 <button 
                     onClick={resetForms}
-                    className="p-3 bg-slate-50 text-slate-400 hover:text-amber-600 rounded-2xl transition-all"
+                    className="p-3 bg-slate-50 text-slate-400 hover:text-amber-600 rounded-2xl transition-all self-end sm:self-auto"
                 >
                     <RefreshCw className="w-5 h-5" />
                 </button>
             </div>
 
             {/* Mode Switcher */}
-            <div className="flex p-2 bg-slate-100 rounded-3xl gap-2">
+            <div className="flex flex-col sm:flex-row p-1.5 sm:p-2 bg-slate-100 rounded-2xl sm:rounded-3xl gap-1.5 sm:gap-2">
                 <button 
                     onClick={() => setMode('DOSE')}
-                    className={`flex-1 py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-3 transition-all ${mode === 'DOSE' ? 'bg-white text-amber-600 shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}
+                    className={`flex-1 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 sm:gap-3 transition-all ${mode === 'DOSE' ? 'bg-white text-amber-600 shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}
                 >
-                    <Syringe className="w-5 h-5" /> Drug Dosing
+                    <Syringe className="w-4 h-4 sm:w-5 sm:h-5" /> Drug Dosing
                 </button>
                 <button 
                     onClick={() => setMode('CRI')}
-                    className={`flex-1 py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-3 transition-all ${mode === 'CRI' ? 'bg-white text-amber-600 shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}
+                    className={`flex-1 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 sm:gap-3 transition-all ${mode === 'CRI' ? 'bg-white text-amber-600 shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}
                 >
-                    <Beaker className="w-5 h-5" /> CRI (Infusion)
+                    <Beaker className="w-4 h-4 sm:w-5 sm:h-5" /> CRI (Infusion)
                 </button>
                 <button 
                     onClick={() => setMode('FLUIDS')}
-                    className={`flex-1 py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-3 transition-all ${mode === 'FLUIDS' ? 'bg-white text-amber-600 shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}
+                    className={`flex-1 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 sm:gap-3 transition-all ${mode === 'FLUIDS' ? 'bg-white text-amber-600 shadow-xl' : 'text-slate-400 hover:text-slate-600'}`}
                 >
-                    <Droplet className="w-5 h-5" /> Fluid Therapy
+                    <Droplet className="w-4 h-4 sm:w-5 sm:h-5" /> Fluid Therapy
                 </button>
             </div>
 

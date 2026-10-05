@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
     Plus,
     Trash2,
@@ -15,6 +15,7 @@ import {
 import { toast } from 'sonner';
 import { ClinicSettings, User as UserType } from '../../types';
 import { api } from '../../services/apiService';
+import html2pdf from 'html2pdf.js';
 
 interface FreeInvoiceProps {
     settings: ClinicSettings;
@@ -40,6 +41,30 @@ export const FreeInvoice: React.FC<FreeInvoiceProps> = ({ settings, user }) => {
     const [amountPaid, setAmountPaid] = useState(0);
     const [saleBy, setSaleBy] = useState(user?.name || '');
     const [showPreview, setShowPreview] = useState(false);
+    const printAreaRef = useRef<HTMLDivElement>(null);
+
+    const handleDownloadPdf = () => {
+        if (!printAreaRef.current) return;
+        const filename = `${invoiceType.toLowerCase()}_${invoiceNumber || 'draft'}.pdf`;
+        const options = {
+            margin: [10, 10, 10, 10],
+            filename: filename,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#ffffff'
+            },
+            jsPDF: {
+                unit: 'mm',
+                format: 'a4',
+                orientation: 'portrait'
+            }
+        };
+        html2pdf().set(options).from(printAreaRef.current).save();
+        toast.success('PDF download initiated');
+    };
 
     // Load from localStorage on mount
     React.useEffect(() => {
@@ -116,6 +141,8 @@ export const FreeInvoice: React.FC<FreeInvoiceProps> = ({ settings, user }) => {
                 type: invoiceType,
                 clientName,
                 invoiceNumber,
+                date,
+                createdAt: date ? new Date(date).toISOString() : undefined,
                 amountPaid,
                 balanceDue,
                 issuerName: saleBy,
@@ -175,7 +202,7 @@ export const FreeInvoice: React.FC<FreeInvoiceProps> = ({ settings, user }) => {
                                     <Printer className="w-4 h-4" /> Print
                                 </button>
                                 <button
-                                    onClick={handlePrint}
+                                    onClick={handleDownloadPdf}
                                     className="bg-white text-slate-700 border border-slate-200 px-6 py-2.5 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-50 shadow-sm transition-all"
                                 >
                                     <Download className="w-4 h-4" /> Download PDF
@@ -186,7 +213,7 @@ export const FreeInvoice: React.FC<FreeInvoiceProps> = ({ settings, user }) => {
                 </div>
 
                 {/* Printable Paper Preview */}
-                <div className="printable-area bg-white p-12 md:p-20 shadow-2xl rounded-sm min-h-[1123px] relative print:p-10 print:shadow-none print:rounded-none max-w-4xl mx-auto">
+                <div ref={printAreaRef} className="printable-area bg-white p-12 md:p-20 shadow-2xl rounded-sm min-h-[1123px] relative print:p-10 print:shadow-none print:rounded-none max-w-4xl mx-auto">
                     {/* Header */}
                     <div className="text-center mb-16">
                         <h1 className="text-4xl font-black text-emerald-800 tracking-tight mb-2">{settings.name || 'Albion Pet Clinic'}</h1>

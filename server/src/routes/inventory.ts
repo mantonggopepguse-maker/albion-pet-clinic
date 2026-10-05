@@ -12,6 +12,7 @@ import { Router } from 'express';
 import { prisma } from '../db.js';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth.js';
 import { z } from 'zod';
+import crypto from 'crypto';
 import { logAudit } from '../utils/auditLogger.js';
 import { logStockMovement } from '../utils/stockMovementLogger.js';
 
@@ -125,11 +126,27 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
             orderBy: { createdAt: 'desc' },
         });
 
+        const total = await prisma.inventoryItem.count({ where });
+        res.set('X-Total-Count', String(total));
+        res.set('X-Page', String(page));
+        res.set('X-Limit', String(limit));
+        res.set('X-Total-Pages', String(Math.ceil(total / limit)));
+
         // Return image URLs as endpoints rather than base64 blobs
         const lightItems = items.map((item: any) => ({
             ...item,
             imageUrl: item.imageUrl ? `/inventory/${item.id}/image` : null,
         }));
+
+        if (req.query.includeTotal === 'true') {
+            return res.json({
+                data: lightItems,
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+            });
+        }
 
         res.json(lightItems);
     } catch (error) {
@@ -140,7 +157,7 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
 // ---------------------------------------------------------------------------
 // GET /:id/image  —  Serve an item's image (base64 → binary)
 // ---------------------------------------------------------------------------
-router.get('/:id/image', async (req, res) => {
+router.get('/:id/image', authenticate, async (req: AuthRequest, res) => {
     try {
         const item = await prisma.inventoryItem.findUnique({
             where: { id: req.params.id as string },
@@ -217,7 +234,7 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
             clinicId: clinicId,
             sku:
                 data.sku ||
-                `SKU-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+                `SKU-${crypto.randomUUID().substring(0, 8).toUpperCase()}`,
             quantity: data.quantity ?? 0,
             minThreshold: data.minThreshold ?? 0,
             category: data.category || 'Other',
@@ -351,7 +368,9 @@ router.post('/batch', authenticate, async (req: AuthRequest, res) => {
             }
         }
 
-        // Atomic restock: create batch + update quantity inside a transaction
+        const clinicId = req.user?.clinicId as string;
+
+        // Atomic restock: create batch + update quantity + log stock movement inside a transaction
         const result = await prisma.$transaction(async (tx: any) => {
             const batch = await tx.stockBatch.create({
                 data: {
@@ -366,6 +385,17 @@ router.post('/batch', authenticate, async (req: AuthRequest, res) => {
                 where: { id: data.itemId },
                 data: { quantity: { increment: data.quantity } },
             });
+
+            await logStockMovement({
+                clinicId,
+                itemId: data.itemId,
+                type: 'restock',
+                quantity: data.quantity,
+                balanceAfter: updatedItem.quantity,
+                reference: `batch-${batch.id}`,
+                note: data.note || undefined,
+                userId: req.user?.id,
+            }, tx);
 
             return { batch, updatedItem };
         });
@@ -383,18 +413,6 @@ router.post('/batch', authenticate, async (req: AuthRequest, res) => {
                 req.user.name,
             );
         }
-
-        const clinicId = req.user?.clinicId as string;
-        await logStockMovement({
-            clinicId,
-            itemId: data.itemId,
-            type: 'restock',
-            quantity: data.quantity,
-            balanceAfter: result.updatedItem.quantity,
-            reference: `batch-${result.batch.id}`,
-            note: data.note || undefined,
-            userId: req.user?.id,
-        });
 
         res.status(201).json(result.batch);
     } catch (error: any) {
@@ -444,17 +462,48 @@ router.get('/:id/movements', authenticate, async (req: AuthRequest, res) => {
 // ---------------------------------------------------------------------------
 router.delete('/:id', authenticate, authorize('Admin'), async (req: AuthRequest, res) => {
     try {
+        const targetId = req.params.id as string;
         const existingItem = await prisma.inventoryItem.findFirst({
             where: req.user?.isSuperAdmin
-                ? { id: req.params.id as string }
+                ? { id: targetId }
                 : {
-                      id: req.params.id as string,
+                      id: targetId,
                       clinicId: req.user?.clinicId as string,
                   },
         });
 
+        if (!existingItem) {
+            return res.status(404).json({ error: 'Item not found in your clinic' });
+        }
+
+        // Check for historical dependencies
+        const [saleCount, movementCount, batchCount] = await Promise.all([
+            prisma.cartItem.count({ where: { itemId: targetId } }).catch(() => 0),
+            prisma.stockMovement.count({ where: { itemId: targetId } }).catch(() => 0),
+            prisma.stockBatch.count({ where: { itemId: targetId } }).catch(() => 0),
+        ]);
+
+        if (saleCount > 0 || movementCount > 0 || batchCount > 0) {
+            // Archive item with zero stock to preserve transaction ledger
+            await prisma.inventoryItem.update({
+                where: { id: targetId },
+                data: { quantity: 0, minThreshold: 0, category: 'Archived' },
+            });
+            if (req.user?.id) {
+                await logAudit(
+                    req.user.id,
+                    'INVENTORY',
+                    'ARCHIVE',
+                    `Archived item with transaction history: ${existingItem.name}`,
+                    req.user.clinicId || undefined,
+                    req.user.name,
+                );
+            }
+            return res.json({ message: 'Item has existing transaction history and was archived' });
+        }
+
         await prisma.inventoryItem.delete({
-            where: { id: req.params.id as string },
+            where: { id: targetId },
         });
 
         if (req.user?.id) {
@@ -462,7 +511,7 @@ router.delete('/:id', authenticate, authorize('Admin'), async (req: AuthRequest,
                 req.user.id,
                 'INVENTORY',
                 'DELETE',
-                `Deleted item: ${existingItem?.name || 'Unknown item'}`,
+                `Deleted item: ${existingItem.name}`,
                 req.user.clinicId || undefined,
                 req.user.name,
             );

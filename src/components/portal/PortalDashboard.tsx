@@ -285,7 +285,7 @@ export const PortalDashboard: React.FC<PortalDashboardProps> = ({ client: initia
     };
 
     const handleCreateOrder = async () => {
-        const items = Object.entries(cart).map(([itemId, quantity]) => ({ itemId, quantity })).filter((item) => item.quantity > 0);
+        const items = (Object.entries(cart) as [string, number][]).map(([itemId, quantity]) => ({ itemId, quantity: Number(quantity) })).filter((item) => item.quantity > 0);
         if (items.length === 0) {
             toast.error('Add at least one item to your cart.');
             return;
@@ -1097,10 +1097,10 @@ export const PortalDashboard: React.FC<PortalDashboardProps> = ({ client: initia
                                 </div>
                                 <button
                                     onClick={handleCreateOrder}
-                                    disabled={Object.values(cart).reduce((sum, qty) => sum + qty, 0) === 0}
+                                    disabled={Object.values(cart).reduce<number>((sum, qty) => sum + Number(qty), 0) === 0}
                                     className="rounded-2xl bg-blue-600 px-4 py-3 text-xs font-black uppercase tracking-widest text-white transition hover:bg-blue-700"
                                 >
-                                    Place order ({Object.values(cart).reduce((sum, qty) => sum + qty, 0)})
+                                    Place order ({Object.values(cart).reduce<number>((sum, qty) => sum + Number(qty), 0)})
                                 </button>
                             </div>
                             <div className="mt-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">

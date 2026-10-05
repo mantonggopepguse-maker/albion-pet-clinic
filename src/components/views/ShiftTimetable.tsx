@@ -89,14 +89,46 @@ export const ShiftTimetable: React.FC<ShiftTimetableProps> = ({ settings }) => {
     };
 
     const handleDeleteShift = async (id: string) => {
-        if (!confirm("Remove this shift?")) return;
         try {
             await api.shifts.delete(id);
             toast.success("Shift removed");
+            setIsModalOpen(false);
             loadData();
         } catch (error) {
             toast.error("Failed to delete shift");
         }
+    };
+
+    const handleDownloadRoster = () => {
+        if (!shifts || shifts.length === 0) {
+            toast.error("No shifts to export for this week");
+            return;
+        }
+        const staffMap = new Map((staff || []).map((s: any) => [s.id, s.name || `${s.firstName || ''} ${s.lastName || ''}`.trim() || 'Staff']));
+        const headers = ['Staff Member', 'Date', 'Shift Type', 'Start Time', 'End Time', 'Notes'];
+        const rows = shifts.map((s: any) => {
+            const staffName = staffMap.get(s.staffId) || s.staff?.name || 'Staff Member';
+            const startDate = new Date(s.startTime);
+            const endDate = new Date(s.endTime);
+            return [
+                `"${staffName.replace(/"/g, '""')}"`,
+                startDate.toLocaleDateString(),
+                s.type || 'Standard',
+                startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                `"${(s.notes || '').replace(/"/g, '""')}"`
+            ];
+        });
+        const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        const weekStartStr = weekDates[0].toISOString().split('T')[0];
+        link.setAttribute('download', `roster_week_${weekStartStr}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success("Timetable roster downloaded");
     };
 
     const navigateWeek = (direction: number) => {
@@ -132,7 +164,11 @@ export const ShiftTimetable: React.FC<ShiftTimetableProps> = ({ settings }) => {
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button className="p-3 bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-amber-200 text-slate-500 transition-all">
+                    <button 
+                        onClick={handleDownloadRoster}
+                        title="Export Weekly Roster"
+                        className="p-3 bg-white border border-slate-100 rounded-2xl shadow-sm hover:border-amber-200 text-slate-500 hover:text-amber-600 active:scale-95 transition-all"
+                    >
                         <Download className="w-5 h-5" />
                     </button>
                     <button 

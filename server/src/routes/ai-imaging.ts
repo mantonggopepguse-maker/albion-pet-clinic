@@ -8,6 +8,7 @@ import { prisma } from '../db.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { z } from 'zod';
 import { driveService } from '../services/driveService.js';
+import { extractJson } from '../utils/extractJson.js';
 
 const router = Router();
 
@@ -92,8 +93,8 @@ router.post('/analyze', authenticate, async (req: AuthRequest, res) => {
         ]);
 
         const response = await result.response;
-        const text = response.text().replace(/```json/g, '').replace(/```/g, '').trim();
-        const analysis = JSON.parse(text);
+        const text = response.text();
+        const analysis = extractJson(text);
 
         // Log activity
         await prisma.aIActivity.create({
@@ -170,8 +171,8 @@ router.post('/compare', authenticate, async (req: AuthRequest, res) => {
         ]);
 
         const response = await result.response;
-        const text = response.text().replace(/```json/g, '').replace(/```/g, '').trim();
-        res.json(JSON.parse(text));
+        const text = response.text();
+        res.json(extractJson(text));
     } catch (error) {
         console.error('Imaging comparison error:', error);
         res.status(500).json({ error: 'Failed to compare images' });

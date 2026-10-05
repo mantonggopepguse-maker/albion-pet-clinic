@@ -166,7 +166,11 @@ export const TriageBoard: React.FC = () => {
                                     </button>
                                 )}
                                 
-                                <button className="p-3 bg-white border border-slate-100 rounded-2xl text-amber-500 hover:bg-amber-50 hover:border-amber-100 transition-all shadow-sm group-hover:scale-110">
+                                <button
+                                    onClick={() => window.dispatchEvent(new CustomEvent('app-navigate', { detail: { view: 'PATIENT_DETAILS', id: patient.id } }))}
+                                    className="p-3 bg-white border border-slate-100 rounded-2xl text-amber-500 hover:bg-amber-50 hover:border-amber-100 transition-all shadow-sm group-hover:scale-110"
+                                    title="Open Patient Profile"
+                                >
                                     <ArrowRight size={16} />
                                 </button>
                             </div>

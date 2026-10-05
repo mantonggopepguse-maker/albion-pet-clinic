@@ -51,7 +51,7 @@ interface LayoutProps {
   settings: ClinicSettings;
 }
 
-const SidebarItem = ({ icon: Icon, label, active = false, badgeCount, onClick }: { icon: React.ElementType, label: string, active?: boolean, badgeCount?: number, onClick?: () => void }) => (
+const SidebarItem: React.FC<{ icon: React.ElementType; label: string; active?: boolean; badgeCount?: number; onClick?: () => void }> = ({ icon: Icon, label, active = false, badgeCount, onClick }) => (
   <div
     onClick={onClick}
     className={`group flex items-center gap-3 px-4 py-3 rounded-[1.4rem] cursor-pointer transition-all duration-300 ease-out active:scale-[0.98] border ${active
@@ -417,13 +417,13 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, onNavigat
 
       {/* Mobile Sidebar Navigation Drawer Overlay */}
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-50 md:hidden flex justify-end">
+        <div className="fixed inset-0 z-50 md:hidden flex justify-start">
           <div
             className="absolute inset-0 bg-navy-950/75 backdrop-blur-md animate-fade-in"
             onClick={() => setIsMobileMenuOpen(false)}
           ></div>
 
-          <div className="relative w-76 max-w-[85vw] h-full bg-gradient-to-b from-navy-950 via-navy-900 to-navy-800 backdrop-blur-3xl shadow-2xl border-l border-amber-500/30 flex flex-col animate-slide-in-right text-white">
+          <div className="relative w-76 max-w-[85vw] h-full bg-gradient-to-b from-navy-950 via-navy-900 to-navy-800 backdrop-blur-3xl shadow-2xl border-r border-amber-500/30 flex flex-col animate-slide-in-left text-white">
             <div className="p-5 flex justify-between items-center border-b border-white/10">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center border border-amber-500/30">
@@ -468,8 +468,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentView, onNavigat
       )}
 
       {/* Main Content */}
-      <main className="flex-1 relative bg-transparent">
-        <div className="w-full px-3 py-4 md:p-8 md:pt-24 max-w-[1600px] mx-auto pb-32 md:pb-8 relative z-10">
+      <main className="flex-1 relative bg-transparent overflow-x-hidden max-w-full">
+        <div className="w-full px-3 py-4 md:p-8 md:pt-24 max-w-[1600px] mx-auto pb-32 md:pb-8 relative z-10 overflow-x-hidden">
           <div key={currentView} className="motion-page">
             {children}
           </div>

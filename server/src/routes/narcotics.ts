@@ -20,19 +20,32 @@ const narcoticLogSchema = z.object({
 
 const router = Router();
 
-// Get all narcotic logs
+// Get all narcotic logs (supports optional pagination)
 router.get('/', authenticate, async (req: AuthRequest, res) => {
     try {
         const clinicId = req.user?.clinicId as string;
-        const logs = await prisma.narcoticLog.findMany({
-            where: { clinicId },
-            include: {
-                user: { select: { name: true } },
-                patient: { select: { name: true } },
-                item: { select: { name: true } }
-            },
-            orderBy: { timestamp: 'desc' }
-        });
+        const page = req.query.page ? parseInt(req.query.page as string, 10) : undefined;
+        const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : (page ? 50 : undefined);
+        const skip = page && limit ? (page - 1) * limit : undefined;
+
+        const [logs, total] = await Promise.all([
+            prisma.narcoticLog.findMany({
+                where: { clinicId },
+                include: {
+                    user: { select: { name: true } },
+                    patient: { select: { name: true } },
+                    item: { select: { name: true } }
+                },
+                orderBy: { timestamp: 'desc' },
+                ...(skip !== undefined ? { skip } : {}),
+                ...(limit !== undefined ? { take: limit } : {}),
+            }),
+            prisma.narcoticLog.count({ where: { clinicId } })
+        ]);
+
+        if (page) {
+            return res.json({ data: logs, total, page, limit: limit || 50 });
+        }
         res.json(logs);
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch narcotic logs' });

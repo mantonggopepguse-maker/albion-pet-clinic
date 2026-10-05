@@ -118,6 +118,24 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
       return res.status(400).json({ error: 'User is not associated with a clinic' });
     }
 
+    // Validate client and patient belong to the same clinic
+    if (data.clientId) {
+      const client = await prisma.client.findFirst({
+        where: { id: data.clientId, clinicId }
+      });
+      if (!client) {
+        return res.status(400).json({ error: 'Client not found in this clinic' });
+      }
+    }
+    if (data.patientId) {
+      const patient = await prisma.patient.findFirst({
+        where: { id: data.patientId, owner: { clinicId } }
+      });
+      if (!patient) {
+        return res.status(400).json({ error: 'Patient not found in this clinic' });
+      }
+    }
+
     // Check for conflicts: Same staff, same time
     if (data.staffId) {
       const conflict = await prisma.appointment.findFirst({

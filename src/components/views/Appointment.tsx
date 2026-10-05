@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { CalendarDays, Plus, User, Phone, Mail, MapPin, Save, ChevronDown, List, Filter, Edit, Trash2, CheckCircle, XCircle, Clock as ClockIcon, Zap } from 'lucide-react';
-import { Client, Procedure, ClinicSettings, Appointment as AppointmentType, AppointmentStatus } from '../../types';
+import { CalendarDays, Plus, User, Phone, Mail, MapPin, Save, ChevronDown, List, Filter, Edit, Trash2, CheckCircle, XCircle, Clock as ClockIcon, Zap, Heart } from 'lucide-react';
+import { Client, Procedure, ClinicSettings, Appointment as AppointmentType, AppointmentStatus, Pet } from '../../types';
 import { formatDateOnly, toLocalDateInputValue } from '../../utils/date';
 
 interface AppointmentProps {
   clients: Client[];
+  patients: Pet[];
   procedures: Procedure[];
   settings: ClinicSettings;
   appointments: AppointmentType[];
@@ -13,7 +14,7 @@ interface AppointmentProps {
   onDelete: (id: string) => void;
 }
 
-export const Appointment: React.FC<AppointmentProps> = ({ clients, procedures, settings, appointments, onSave, onUpdate, onDelete }) => {
+export const Appointment: React.FC<AppointmentProps> = ({ clients, patients, procedures, settings, appointments, onSave, onUpdate, onDelete }) => {
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
   const [selectedDate, setSelectedDate] = useState(toLocalDateInputValue());
   const [filterStatus, setFilterStatus] = useState<AppointmentStatus | 'all'>('all');
@@ -22,6 +23,7 @@ export const Appointment: React.FC<AppointmentProps> = ({ clients, procedures, s
 
   // Form state for new/edit appointments
   const [selectedClientId, setSelectedClientId] = useState('');
+  const [selectedPatientId, setSelectedPatientId] = useState('');
   const [selectedProcedureId, setSelectedProcedureId] = useState('');
   const [appointmentDate, setAppointmentDate] = useState('');
   const [appointmentTime, setAppointmentTime] = useState('');
@@ -39,6 +41,7 @@ export const Appointment: React.FC<AppointmentProps> = ({ clients, procedures, s
   });
 
   const selectedClient = clients.find(c => c.id === selectedClientId);
+  const clientPatients = patients.filter(p => p.ownerId === selectedClientId);
   const selectedProcedure = procedures.find(p => p.id === selectedProcedureId);
   const activeProcedures = procedures.filter(p => p.status === 'Active');
 
@@ -69,6 +72,7 @@ export const Appointment: React.FC<AppointmentProps> = ({ clients, procedures, s
 
     const appointmentData = {
       clientId: isManualClient ? null : selectedClientId,
+      patientId: (!isManualClient && selectedPatientId) ? selectedPatientId : undefined,
       manualClient: isManualClient ? manualClient : null,
       procedureId: selectedProcedureId,
       date: appointmentDate,
@@ -92,6 +96,7 @@ export const Appointment: React.FC<AppointmentProps> = ({ clients, procedures, s
 
   const resetForm = () => {
     setSelectedClientId('');
+    setSelectedPatientId('');
     setSelectedProcedureId('');
     setAppointmentDate('');
     setAppointmentTime('');
@@ -104,6 +109,7 @@ export const Appointment: React.FC<AppointmentProps> = ({ clients, procedures, s
   const handleEdit = (appointment: AppointmentType) => {
     setEditingAppointment(appointment);
     setSelectedClientId(appointment.clientId || '');
+    setSelectedPatientId(appointment.patientId || '');
     setSelectedProcedureId(appointment.procedureId);
     setAppointmentDate(appointment.date);
     setAppointmentTime(appointment.time);
@@ -224,9 +230,10 @@ export const Appointment: React.FC<AppointmentProps> = ({ clients, procedures, s
                       phone: appointment.manualClient.phone
                     } : null);
                     const procedure = procedures.find(p => p.id === appointment.procedureId);
+                    const patient = appointment.patient || (appointment.patientId ? patients.find(p => p.id === appointment.patientId) : null);
 
                     return (
-                      <div key={appointment.id} className="p-4 bg-white border rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                      <div key={appointment.id} className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm hover:shadow-md transition-shadow">
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-2">
@@ -237,9 +244,16 @@ export const Appointment: React.FC<AppointmentProps> = ({ clients, procedures, s
                               </span>
                             </div>
                             <div className="space-y-1">
-                              <p className="font-medium text-slate-800">
-                                {client ? `${client.firstName} ${client.lastName}` : 'Unknown Client'}
-                              </p>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className="font-bold text-slate-800">
+                                  {client ? `${client.firstName} ${client.lastName}` : 'Unknown Client'}
+                                </p>
+                                {patient && (
+                                  <span className="px-2 py-0.5 rounded-lg text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200/60 inline-flex items-center gap-1">
+                                    🐾 {patient.name} {patient.species ? `(${patient.species})` : ''}
+                                  </span>
+                                )}
+                              </div>
                               <p className="text-sm text-slate-600">
                                 {procedure?.name || 'Unknown Procedure'}
                               </p>
@@ -296,9 +310,10 @@ export const Appointment: React.FC<AppointmentProps> = ({ clients, procedures, s
                     phone: appointment.manualClient.phone
                   } : null);
                   const procedure = procedures.find(p => p.id === appointment.procedureId);
+                  const patient = appointment.patient || (appointment.patientId ? patients.find(p => p.id === appointment.patientId) : null);
 
                   return (
-                    <div key={appointment.id} className="p-4 bg-white border rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                    <div key={appointment.id} className="p-4 bg-white border border-slate-100 rounded-xl shadow-sm hover:shadow-md transition-shadow">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
@@ -308,9 +323,16 @@ export const Appointment: React.FC<AppointmentProps> = ({ clients, procedures, s
                             </span>
                           </div>
                           <div className="space-y-1">
-                            <p className="font-medium text-slate-800">
-                              {client ? `${client.firstName} ${client.lastName}` : 'Unknown Client'}
-                            </p>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="font-bold text-slate-800">
+                                {client ? `${client.firstName} ${client.lastName}` : 'Unknown Client'}
+                              </p>
+                              {patient && (
+                                <span className="px-2 py-0.5 rounded-lg text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200/60 inline-flex items-center gap-1">
+                                  🐾 {patient.name} {patient.species ? `(${patient.species})` : ''}
+                                </span>
+                              )}
+                            </div>
                             <p className="text-sm text-slate-600">
                               {procedure?.name || 'Unknown Procedure'}
                             </p>
@@ -383,15 +405,35 @@ export const Appointment: React.FC<AppointmentProps> = ({ clients, procedures, s
               </div>
 
               {!isManualClient ? (
-                <div className="space-y-2">
-                  <select
-                    value={selectedClientId}
-                    onChange={(e) => setSelectedClientId(e.target.value)}
-                    className="w-full soft-input px-3 py-2 text-sm"
-                  >
-                    <option value="">Select Client</option>
-                    {clients.map(c => <option key={c.id} value={c.id}>{c.firstName} {c.lastName}</option>)}
-                  </select>
+                <div className="space-y-3">
+                  <div>
+                    <select
+                      value={selectedClientId}
+                      onChange={(e) => {
+                        setSelectedClientId(e.target.value);
+                        setSelectedPatientId('');
+                      }}
+                      className="w-full soft-input px-3 py-2 text-sm"
+                    >
+                      <option value="">Select Client</option>
+                      {clients.map(c => <option key={c.id} value={c.id}>{c.firstName} {c.lastName}</option>)}
+                    </select>
+                  </div>
+                  {selectedClientId && (
+                    <div>
+                      <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Patient / Pet</label>
+                      <select
+                        value={selectedPatientId}
+                        onChange={(e) => setSelectedPatientId(e.target.value)}
+                        className="w-full soft-input px-3 py-2 text-sm"
+                      >
+                        <option value="">Select Pet (Optional)...</option>
+                        {clientPatients.map(p => (
+                          <option key={p.id} value={p.id}>{p.name} ({p.species}{p.breed ? ` - ${p.breed}` : ''})</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-3 p-3 bg-slate-50 rounded-lg">

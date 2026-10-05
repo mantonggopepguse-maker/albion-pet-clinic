@@ -71,12 +71,11 @@ export const syncService = {
     async fetchAndMergeTreatments() {
         try {
             const serverTreatments = await api.treatments.getAll();
+            if (!Array.isArray(serverTreatments)) return await db.treatments.toArray();
 
             // Fetch unsynced local treatments so we don't overwrite dirty offline edits
             const dirtyRecords = await db.treatments.where('synced').equals(0).toArray();
             const dirtyIds = new Set(dirtyRecords.map(r => r.id).filter(Boolean));
-
-            await db.treatments.where('synced').equals(1).delete();
 
             const toAdd = serverTreatments
                 .filter((t: any) => !dirtyIds.has(t.id))
@@ -87,23 +86,51 @@ export const syncService = {
                 }));
 
             if (toAdd.length > 0) {
+                // Upsert first so failure cannot wipe cached records
                 await db.treatments.bulkPut(toAdd);
+
+                // Clean up obsolete synced records that no longer exist on server
+                const serverIdSet = new Set(serverTreatments.map((t: any) => t.id));
+                const allSynced = await db.treatments.where('synced').equals(1).toArray();
+                const obsoleteIds = allSynced
+                    .map(r => r.id)
+                    .filter((id): id is string => Boolean(id) && !serverIdSet.has(id));
+                if (obsoleteIds.length > 0) {
+                    await db.treatments.bulkDelete(obsoleteIds);
+                }
             }
             return await db.treatments.toArray();
         } catch (error) {
+            console.error('Failed to merge treatments from server:', error);
             return await db.treatments.toArray();
         }
     }
 };
 
-if (typeof window !== 'undefined') {
-    setInterval(() => {
+let syncIntervalId: ReturnType<typeof setInterval> | null = null;
+let onlineListenerRegistered = false;
+
+export const startSyncService = () => {
+    if (typeof window === 'undefined') return;
+    if (syncIntervalId) clearInterval(syncIntervalId);
+
+    syncIntervalId = setInterval(() => {
         if (navigator.onLine) {
             syncService.syncDirtyRecords();
         }
     }, 60000);
 
-    window.addEventListener('online', () => {
-        syncService.syncDirtyRecords();
-    });
-}
+    if (!onlineListenerRegistered) {
+        window.addEventListener('online', () => {
+            syncService.syncDirtyRecords();
+        });
+        onlineListenerRegistered = true;
+    }
+};
+
+export const stopSyncService = () => {
+    if (syncIntervalId) {
+        clearInterval(syncIntervalId);
+        syncIntervalId = null;
+    }
+};

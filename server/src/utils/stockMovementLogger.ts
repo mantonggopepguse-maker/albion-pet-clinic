@@ -35,10 +35,12 @@ export interface StockMovementParams {
  * will be committed independently of the enclosing transaction.
  *
  * @param params - Stock movement details
+ * @param tx - Optional Prisma transaction client
  */
-export const logStockMovement = async (params: StockMovementParams): Promise<void> => {
+export const logStockMovement = async (params: StockMovementParams, tx?: any): Promise<void> => {
     try {
-        await prisma.stockMovement.create({
+        const client = tx || prisma;
+        await client.stockMovement.create({
             data: {
                 clinicId: params.clinicId,
                 itemId: params.itemId,

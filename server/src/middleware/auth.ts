@@ -37,12 +37,21 @@ export interface AuthRequest extends Request {
 export const authenticate = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
         const authHeader = req.headers.authorization;
+        let token: string | undefined;
 
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            token = authHeader.substring(7);
+        } else if (req.headers.cookie) {
+            const cookieMatch = req.headers.cookie.match(/(?:^|;\s*)token=([^;]+)/);
+            if (cookieMatch) {
+                token = decodeURIComponent(cookieMatch[1]);
+            }
+        }
+
+        if (!token) {
             return res.status(401).json({ error: 'No token provided' });
         }
 
-        const token = authHeader.substring(7);
         let secret: string;
         try {
             secret = getJwtSecret();

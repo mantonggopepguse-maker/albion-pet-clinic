@@ -127,16 +127,35 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
             where.clientId = clientId;
         }
 
-        const sales = await prisma.sale.findMany({
-            where,
-            take: limit,
-            skip: skip,
-            orderBy: { createdAt: 'desc' },
-            include: {
-                items: { include: { item: true } },
-                payments: true,
-            },
-        });
+        const [sales, total] = await Promise.all([
+            prisma.sale.findMany({
+                where,
+                take: limit,
+                skip: skip,
+                orderBy: { createdAt: 'desc' },
+                include: {
+                    items: { include: { item: true } },
+                    payments: true,
+                },
+            }),
+            prisma.sale.count({ where }),
+        ]);
+
+        res.set('X-Total-Count', String(total));
+        res.set('X-Page', String(page));
+        res.set('X-Limit', String(limit));
+        res.set('X-Total-Pages', String(Math.ceil(total / limit)));
+
+        if (req.query.includeTotal === 'true') {
+            return res.json({
+                data: sales,
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+            });
+        }
+
         res.json(sales);
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch sales' });
@@ -202,6 +221,8 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
             balanceDue,
             invoiceNumber: rawInvoiceNumber,
             payments: payloadPayments,
+            date: rawDate,
+            createdAt: rawCreatedAt,
             ...data
         } = req.body;
         const requestedInvoiceNumber = normalizeInvoiceNumber(rawInvoiceNumber);
@@ -400,9 +421,20 @@ router.post('/', authenticate, async (req: AuthRequest, res) => {
                         }
 
                         // 1. Create the Sale record
+                        const parsedCreatedAt = rawDate
+                            ? new Date(rawDate)
+                            : rawCreatedAt
+                                ? new Date(rawCreatedAt)
+                                : undefined;
+                        const validCreatedAt =
+                            parsedCreatedAt && !isNaN(parsedCreatedAt.getTime())
+                                ? parsedCreatedAt
+                                : undefined;
+
                         const sale = await tx.sale.create({
                             data: {
                                 ...data,
+                                ...(validCreatedAt ? { createdAt: validCreatedAt } : {}),
                                 invoiceNumber,
                                 type,
                                 status: saleStatus,

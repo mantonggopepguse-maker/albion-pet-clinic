@@ -9,6 +9,47 @@ import { logAudit } from '../utils/auditLogger.js';
 import { z } from 'zod';
 import { sanitizeObject } from '../utils/sanitize.js';
 
+const medicationSchema = z.object({
+    drug: z.string().optional(),
+    dose: z.string().optional(),
+    route: z.string().optional(),
+    freq: z.string().optional(),
+    frequency: z.string().optional(),
+    name: z.string().optional(),
+    dosage: z.string().optional(),
+    duration: z.string().optional(),
+    quantity: z.number().optional(),
+    inventoryItemId: z.string().optional(),
+    notes: z.string().optional(),
+}).passthrough();
+
+const procedureSchema = z.object({
+    name: z.string().optional(),
+    procedureId: z.string().optional(),
+    notes: z.string().optional(),
+    cost: z.number().optional(),
+}).passthrough();
+
+const hospitalizationSchema = z.object({
+    kennelId: z.string().optional(),
+    reason: z.string().optional(),
+    estimatedCost: z.union([z.number(), z.string()]).optional(),
+}).passthrough();
+
+const nextAppointmentSchema = z.object({
+    date: z.string().optional(),
+    time: z.string().optional(),
+    procedureId: z.union([z.string(), z.array(z.string())]).optional(),
+    notes: z.string().optional(),
+}).passthrough();
+
+const labRequestSchema = z.object({
+    testName: z.string().optional(),
+    sampleType: z.string().optional(),
+    priority: z.string().optional(),
+    notes: z.string().optional(),
+}).passthrough();
+
 const treatmentSchema = z.object({
     patientId: z.string(),
     diagnosis: z.string().optional(),
@@ -18,16 +59,15 @@ const treatmentSchema = z.object({
     status: z.string().optional(),
     totalCost: z.number().optional(),
     date: z.string().optional(),
-    medications: z.array(z.any()).optional(),
-    procedures: z.array(z.any()).optional(),
-    hospitalization: z.any().optional(),
-    nextAppointment: z.any().optional(),
-    labRequests: z.array(z.any()).optional(),
+    medications: z.array(medicationSchema).optional(),
+    procedures: z.array(procedureSchema).optional(),
+    hospitalization: hospitalizationSchema.optional(),
+    nextAppointment: nextAppointmentSchema.optional(),
+    labRequests: z.array(labRequestSchema).optional(),
 });
 
 const router = Router();
 const normalizeMedicationName = (value: string) => value.trim().toLowerCase().replace(/\s+/g, ' ');
-
 // Get all treatments
 router.get('/', authenticate, async (req: AuthRequest, res) => {
     try {

@@ -27,8 +27,8 @@ export class AlbionPetClinicDB extends Dexie {
 
     constructor() {
         super('AlbionPetClinicDB');
-        this.version(2).stores({
-            treatments: '++id, clientId, patientId, date, synced, deleted',
+        this.version(3).stores({
+            treatments: 'id, clientId, patientId, date, synced, deleted',
             cache: '&key, timestamp'
         });
     }

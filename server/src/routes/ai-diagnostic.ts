@@ -7,6 +7,7 @@ import { prisma } from '../db.js';
 import { authenticate, AuthRequest } from '../middleware/auth.js';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { z } from 'zod';
+import { extractJson } from '../utils/extractJson.js';
 
 const router = Router();
 
@@ -96,19 +97,7 @@ router.post('/analyze-case', authenticate, async (req: AuthRequest, res) => {
 
         const result = await model.generateContent(prompt);
         const response = await result.response;
-        let text = response.text();
-        
-        // Strip markdown json block if present
-        text = text.replace(/^```json/mi, '').replace(/```$/m, '').trim();
-        
-        let analysis;
-        try {
-            analysis = JSON.parse(text);
-        } catch (e) {
-            console.error('Failed to parse AI response:', text);
-            throw e;
-        }
-
+        const analysis = extractJson(response.text());
         res.json(analysis);
     } catch (error) {
         console.error('Diagnostic analysis error:', error);
@@ -152,7 +141,7 @@ router.post('/parse-lab-result', authenticate, async (req: AuthRequest, res) => 
 
         const result = await model.generateContent(prompt);
         const response = await result.response;
-        const labs = JSON.parse(response.text());
+        const labs = extractJson(response.text());
 
         res.json(labs);
     } catch (error) {
@@ -206,8 +195,8 @@ router.post('/suggest-lab-plan', authenticate, async (req: AuthRequest, res) => 
         `;
 
         const result = await model.generateContent(prompt);
-        const text = (await result.response).text().replace(/^```json/mi, '').replace(/```$/m, '').trim();
-        res.json(JSON.parse(text));
+        const response = await result.response;
+        res.json(extractJson(response.text()));
     } catch (error) {
         console.error('Lab plan suggestion error:', error);
         res.status(500).json({ error: 'Failed to suggest lab plan' });
@@ -253,8 +242,8 @@ router.post('/interpret-lab-result', authenticate, async (req: AuthRequest, res)
         `;
 
         const result = await model.generateContent(prompt);
-        const text = (await result.response).text().replace(/^```json/mi, '').replace(/```$/m, '').trim();
-        res.json(JSON.parse(text));
+        const text = (await result.response).text();
+        res.json(extractJson(text));
     } catch (error) {
         console.error('Lab interpretation error:', error);
         res.status(500).json({ error: 'Failed to interpret lab result' });

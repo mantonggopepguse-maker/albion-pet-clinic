@@ -19,6 +19,11 @@ const cleanupLimiter = rateLimit({
 // Define the Cloud Scheduler trigger point
 // Can be called via GET /api/trigger-cleanup
 router.get('/', cleanupLimiter, async (req, res) => {
+    const cronSecret = process.env.CRON_SECRET;
+    if (cronSecret && req.headers['x-cron-secret'] !== cronSecret) {
+        return res.status(403).json({ error: 'Forbidden' });
+    }
+
     try {
         console.log('External trigger received for pending registrations cleanup.');
         

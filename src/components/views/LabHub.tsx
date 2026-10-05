@@ -394,7 +394,7 @@ export const LabHub: React.FC<LabHubProps> = ({
 
   /* ─── Batch save ─── */
   const handleBatchSave = async () => {
-    const updates = Object.entries(batchEntries)
+    const updates = (Object.entries(batchEntries) as [string, any][])
       .filter(([_, entry]) => entry.numericalValue || entry.result || entry.findings)
       .map(([id, entry]) => ({
         id,

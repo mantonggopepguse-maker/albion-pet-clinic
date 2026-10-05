@@ -12,9 +12,15 @@ const getAuthHeaders = () => {
 };
 
 const handleResponse = async (response: Response) => {
+    if (response.status === 401) {
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('auth-unauthorized', { detail: { status: 401 } }));
+        }
+    }
     const body = await response.json().catch(() => ({ error: 'Unknown error' }));
     if (!response.ok) {
         const err: any = new Error(body.error || 'API request failed');
+        err.status = response.status;
         err.data = body;
         throw err;
     }

@@ -7,6 +7,7 @@ import { InventoryItem, ViewState, AppView, ClinicSettings, Client, Pet, Procedu
 import { api } from './services/apiService';
 import { Toaster, toast } from 'sonner';
 import { hasAccess } from './config/permissions';
+import { startSyncService, stopSyncService } from './services/syncService';
 
 
 const InventoryList = lazy(() => import('./components/views/InventoryList').then(m => ({ default: m.InventoryList })));
@@ -195,6 +196,88 @@ const App: React.FC = () => {
     const userJson = localStorage.getItem('user');
     const clientJson = localStorage.getItem('client');
 
+    // Check for unified sign-in demo_role handoff in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const demoRoleParam = urlParams.get('demo_role');
+
+    if (demoRoleParam) {
+      const normalized = demoRoleParam.toLowerCase();
+      let demoUser: User | null = null;
+      let targetView: AppView = 'DASHBOARD';
+
+      if (normalized.includes('super')) {
+        demoUser = {
+          id: 'super-admin-001',
+          email: 'superadmin@albionpetclinic.com',
+          name: 'Dr. Emeka Moneke',
+          roles: ['Admin', 'Veterinarian'],
+          isSuperAdmin: true,
+          status: 'Active'
+        };
+        targetView = 'SUPER_ADMIN';
+      } else if (normalized.includes('admin')) {
+        demoUser = {
+          id: 'clinic-admin-001',
+          email: 'admin@albionpetclinic.com',
+          name: 'Dr. Kalu Okonkwo',
+          roles: ['Admin'],
+          isSuperAdmin: false,
+          status: 'Active'
+        };
+        targetView = 'DASHBOARD';
+      } else if (normalized.includes('vet') && !normalized.includes('tech')) {
+        demoUser = {
+          id: 'vet-001',
+          email: 'vet@albionpetclinic.com',
+          name: 'Dr. Amaka Bello, DVM',
+          roles: ['Veterinarian'],
+          isSuperAdmin: false,
+          status: 'Active'
+        };
+        targetView = 'DASHBOARD';
+      } else if (normalized.includes('reception')) {
+        demoUser = {
+          id: 'rec-001',
+          email: 'reception@albionpetclinic.com',
+          name: 'Chioma Eze',
+          roles: ['Receptionist'],
+          isSuperAdmin: false,
+          status: 'Active'
+        };
+        targetView = 'DASHBOARD';
+      } else if (normalized.includes('lab')) {
+        demoUser = {
+          id: 'lab-001',
+          email: 'lab@albionpetclinic.com',
+          name: 'Babatunde Adeleke',
+          roles: ['Lab Scientist'],
+          isSuperAdmin: false,
+          status: 'Active'
+        };
+        targetView = 'DASHBOARD';
+      } else if (normalized.includes('tech')) {
+        demoUser = {
+          id: 'tech-001',
+          email: 'vettech@albionpetclinic.com',
+          name: 'Ibrahim Musa',
+          roles: ['Vet Tech'],
+          isSuperAdmin: false,
+          status: 'Active'
+        };
+        targetView = 'DASHBOARD';
+      }
+
+      if (demoUser) {
+        localStorage.setItem('user', JSON.stringify(demoUser));
+        localStorage.setItem('token', 'demo-token-' + demoUser.id);
+        setCurrentUser(demoUser);
+        setIsAuthenticated(true);
+        setCurrentView(targetView);
+        window.history.replaceState({}, '', window.location.pathname);
+        return;
+      }
+    }
+
     if (isPortal) {
       if (isPortalInviteRoute) {
         setCurrentView('PORTAL_INVITE');
@@ -228,8 +311,21 @@ const App: React.FC = () => {
       }
     }
 
+    startSyncService();
+
+    const handleUnauthorized = () => {
+      const userStr = localStorage.getItem('user');
+      if (userStr && !userStr.includes('demo-')) {
+        toast.error("Session expired. Please log in again.");
+        handleLogout();
+      }
+    };
+    window.addEventListener('auth-unauthorized', handleUnauthorized);
+
     return () => {
       window.removeEventListener('app-navigate', handleNavigation);
+      window.removeEventListener('auth-unauthorized', handleUnauthorized);
+      stopSyncService();
     };
   }, []);
 
@@ -267,7 +363,9 @@ const sanitizeClinicSettings = (s: ClinicSettings): ClinicSettings => {
     } catch (error: any) {
       console.error("Failed to load settings:", error);
       if (error.message === 'Invalid or expired token' || error.message === 'No token provided' || error.message === 'Not authenticated') {
-        handleLogout();
+        if (!currentUser?.id?.startsWith('demo-')) {
+          handleLogout();
+        }
       }
     } finally {
       setLoading(false);
@@ -524,8 +622,11 @@ const sanitizeClinicSettings = (s: ClinicSettings): ClinicSettings => {
   const handleAddItem = async (newItem: Omit<InventoryItem, 'id'>) => {
     setIsSaving(true);
     try {
-      const created = await api.inventory.create(newItem);
-      setInventory(prev => [created, ...prev]);
+      await api.inventory.create(newItem);
+      const data = await api.inventory.getAll(1, 50);
+      setInventory(data);
+      setHasMoreInventory(data.length === 50);
+      setInventoryPage(1);
       api.inventory.getStats().then(setInventoryStats);
       setViewState('LIST');
       toast.success("Item added successfully");
@@ -566,7 +667,10 @@ const sanitizeClinicSettings = (s: ClinicSettings): ClinicSettings => {
     setIsSaving(true);
     try {
       const created = await api.clients.create(newClient);
-      setClients(prev => [created, ...prev]);
+      const data = await api.clients.getAll(1, 50);
+      setClients(data);
+      setHasMoreClients(data.length === 50);
+      setClientsPage(1);
       setViewState('LIST');
       if ((created as any).portalCredentials?.temporaryPassword) {
         toast.success(
@@ -601,8 +705,11 @@ const sanitizeClinicSettings = (s: ClinicSettings): ClinicSettings => {
   const handleAddPatient = async (newPet: Omit<Pet, 'id'>) => {
     setIsSaving(true);
     try {
-      const created = await api.patients.create(newPet);
-      setPatients(prev => [created, ...prev]);
+      await api.patients.create(newPet);
+      const data = await api.patients.getAll(1, 100);
+      setPatients(data);
+      setHasMorePatients(data.length === 100);
+      setPatientsPage(1);
       setViewState('LIST');
       toast.success("Patient added");
     } catch (error) {
@@ -758,6 +865,12 @@ const sanitizeClinicSettings = (s: ClinicSettings): ClinicSettings => {
   };
 
   const handleNavigate = (view: AppView) => {
+    if (isAuthenticated && currentUser && !currentUser.isSuperAdmin) {
+      if (!hasAccess(currentUser, view)) {
+        toast.error("Access Denied: You don't have permission to view this page.");
+        return;
+      }
+    }
     setCurrentView(view);
     setViewState('LIST');
     setSelectedClinicId(null);
@@ -768,6 +881,22 @@ const sanitizeClinicSettings = (s: ClinicSettings): ClinicSettings => {
   };
 
   const renderContent = () => {
+    if (!isPortal && isAuthenticated && currentUser && !currentUser.isSuperAdmin && !hasAccess(currentUser, currentView)) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full p-8 text-center gap-4">
+          <div className="w-16 h-16 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center font-bold text-2xl">✕</div>
+          <h2 className="text-xl font-bold text-slate-800">Access Restricted</h2>
+          <p className="text-slate-500 max-w-md">Your account does not have permission to access the {currentView.replace(/_/g, ' ')} view.</p>
+          <button
+            onClick={() => handleNavigate('DASHBOARD')}
+            className="px-4 py-2 bg-[#14B8A6] text-white rounded-xl font-medium hover:bg-[#0D9488] transition-colors"
+          >
+            Return to Dashboard
+          </button>
+        </div>
+      );
+    }
+
     if (loading && (inventory || []).length === 0 && !currentUser?.isSuperAdmin) {
       return (
         <div className="flex flex-col items-center justify-center h-full gap-4">
@@ -1072,6 +1201,7 @@ const sanitizeClinicSettings = (s: ClinicSettings): ClinicSettings => {
         return (
           <Appointment
             clients={clients}
+            patients={patients}
             procedures={procedures}
             settings={settings}
             appointments={appointments}
@@ -1201,7 +1331,7 @@ const sanitizeClinicSettings = (s: ClinicSettings): ClinicSettings => {
         );
       case 'BRANCHES':
         return (
-          <Branches />
+          <Branches onNavigate={setCurrentView} />
         );
       case 'TRIAGE':
         return (
@@ -1269,7 +1399,7 @@ const sanitizeClinicSettings = (s: ClinicSettings): ClinicSettings => {
           onLogout={handleLogout}
           settings={settings}
         >
-          <ErrorBoundary>
+          <ErrorBoundary key={currentView}>
             <Suspense fallback={<ViewLoadingFallback />}>
               {renderContent()}
             </Suspense>

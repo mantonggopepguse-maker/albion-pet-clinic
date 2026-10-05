@@ -76,8 +76,8 @@ export const ClinicDetails: React.FC<ClinicDetailsProps> = ({ clinicId, onBack }
     ];
 
     const systemUsage = [
-        { label: 'Storage Usage', value: `${clinic.storageUsage.toFixed(2)} MB`, icon: Database, color: 'text-slate-600', bg: 'bg-slate-100' },
-        { label: 'RAM Allocation', value: `${clinic.ramUsage.toFixed(2)} GB`, icon: Cpu, color: 'text-slate-600', bg: 'bg-slate-100' },
+        { label: 'Storage Usage', value: `${(clinic.storageUsage ?? 0).toFixed(2)} MB`, icon: Database, color: 'text-slate-600', bg: 'bg-slate-100' },
+        { label: 'RAM Allocation', value: `${(clinic.ramUsage ?? 0).toFixed(2)} GB`, icon: Cpu, color: 'text-slate-600', bg: 'bg-slate-100' },
     ];
 
     return (

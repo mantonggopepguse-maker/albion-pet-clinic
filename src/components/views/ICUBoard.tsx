@@ -159,7 +159,7 @@ export const ICUBoard: React.FC<ICUBoardProps> = ({ settings, currentUser, onNav
            onClick: () => {
              // We can navigate to sales or a specific invoice view if it exists
              // For now, let's navigate to SALES view
-             onNavigate('SALES');
+             onNavigate('POS');
            }
          }
        });
@@ -355,12 +355,17 @@ export const ICUBoard: React.FC<ICUBoardProps> = ({ settings, currentUser, onNav
                   </div>
                 </div>
               ) : (
-                <div className="p-12 text-center">
-                  <div className="w-20 h-20 mx-auto bg-white/40 rounded-[2rem] border border-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <Plus className="w-8 h-8 text-slate-200" />
+                <button
+                  type="button"
+                  onClick={() => onNavigate('HOSPITALIZATION')}
+                  className="p-12 text-center w-full group/btn cursor-pointer block"
+                  title="Admit patient to kennel"
+                >
+                  <div className="w-20 h-20 mx-auto bg-white/70 rounded-[2rem] border border-slate-200 flex items-center justify-center mb-4 group-hover/btn:scale-110 group-hover/btn:bg-purple-50 group-hover/btn:border-purple-300 transition-all shadow-sm">
+                    <Plus className="w-8 h-8 text-slate-400 group-hover/btn:text-purple-600 transition-colors" />
                   </div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Cage Latency</p>
-                </div>
+                  <p className="text-[10px] font-black text-slate-400 group-hover/btn:text-purple-600 uppercase tracking-[0.3em] transition-colors">Admit to Kennel</p>
+                </button>
               )}
             </div>
           );

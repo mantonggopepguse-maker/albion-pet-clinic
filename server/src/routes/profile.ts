@@ -60,10 +60,10 @@ router.post('/avatar', authenticate, async (req: AuthRequest, res) => {
 });
 
 // Get avatar image (if stored as base64 or internal ref)
-router.get('/:id/avatar', async (req, res) => {
+router.get('/:id/avatar', authenticate, async (req: AuthRequest, res) => {
     try {
         const user = await prisma.user.findUnique({
-            where: { id: req.params.id },
+            where: { id: req.params.id as string },
             select: { avatarUrl: true }
         });
 

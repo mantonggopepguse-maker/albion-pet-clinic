@@ -65,6 +65,46 @@ export const NarcoticsLockbox: React.FC<NarcoticsLockboxProps> = ({ settings, cu
 
     const uniqueStaff = Array.from(new Set(logs.map(l => l.staff?.name || l.staffName))).filter(Boolean);
 
+    const discrepancyLogs = logs.filter(l => {
+        if ((l as any).isDiscrepancy || (l as any).discrepancy) return true;
+        const qty = (l as any).amountDrawn ?? l.quantity ?? 0;
+        if (qty <= 0) return true;
+        if (typeof (l as any).balanceAfter === 'number' && (l as any).balanceAfter < 0) return true;
+        if ((l as any).authPinUsed === 'FAILED' || (l as any).authPinUsed === 'FLAGGED') return true;
+        const noteText = `${l.notes || ''} ${(l as any).reason || ''}`.toLowerCase();
+        return noteText.includes('discrepancy') || noteText.includes('variance') || noteText.includes('mismatch') || noteText.includes('unaccounted');
+    });
+
+    const discrepancyCount = discrepancyLogs.length;
+    const isIntegrityVerified = discrepancyCount === 0;
+
+    const handleExportRegister = () => {
+        if (!logs || logs.length === 0) {
+            toast.error('No audit logs to export');
+            return;
+        }
+        const headers = ['Timestamp', 'Drug', 'Quantity', 'Balance After', 'Patient', 'Administered By', 'Witness', 'Reason'];
+        const rows = logs.map(l => [
+            new Date((l as any).timestamp || (l as any).createdAt || Date.now()).toLocaleString(),
+            `"${(l.item?.name || l.itemName || '').replace(/"/g, '""')}"`,
+            l.quantity,
+            l.balanceAfter ?? '',
+            `"${(l.patient?.name || l.patientName || '').replace(/"/g, '""')}"`,
+            `"${(l.staff?.name || l.staffName || '').replace(/"/g, '""')}"`,
+            `"${(l.witnessName || '').replace(/"/g, '""')}"`,
+            `"${(l.reason || '').replace(/"/g, '""')}"`,
+        ]);
+        const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', `narcotics_audit_register_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success('Audit register exported successfully');
+    };
+
     return (
         <div className="space-y-10 animate-fade-in pb-32">
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 bg-white p-10 rounded-[3rem] border border-white shadow-2xl relative overflow-hidden">
@@ -74,9 +114,9 @@ export const NarcoticsLockbox: React.FC<NarcoticsLockboxProps> = ({ settings, cu
                         <div className="w-16 h-16 bg-rose-500 rounded-[1.5rem] flex items-center justify-center text-white shadow-2xl shadow-rose-200">
                             <Shield className="w-8 h-8" />
                         </div>
-                        Narcotics Lockbox
+                        Secure Narcotics Safe
                     </h1>
-                    <p className="text-slate-400 font-black mt-4 uppercase text-[10px] tracking-[0.4em] ml-2 flex items-center gap-3">
+                    <p className="text-slate-400 font-bold text-xs mt-3 flex items-center gap-3">
                         <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
                         High-Fidelity Regulatory Compliance Hub
                     </p>
@@ -89,7 +129,10 @@ export const NarcoticsLockbox: React.FC<NarcoticsLockboxProps> = ({ settings, cu
                     >
                         <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
                     </button>
-                    <button className="btn-luminous btn-luminous-primary px-10 py-5 text-[10px] uppercase tracking-[0.3em] shadow-2xl shadow-rose-100">
+                    <button 
+                        onClick={handleExportRegister}
+                        className="btn-luminous btn-luminous-primary px-10 py-5 text-[10px] uppercase tracking-[0.3em] shadow-2xl shadow-rose-100 hover:opacity-90 active:scale-95 transition-all"
+                    >
                         <Download className="w-4 h-4" /> Export Audit Register
                     </button>
                 </div>
@@ -97,14 +140,16 @@ export const NarcoticsLockbox: React.FC<NarcoticsLockboxProps> = ({ settings, cu
 
             {/* Matrix Metrics - Prism Glass */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                <div className="glass-card bg-rose-50/50 border-rose-100/50 p-8 rounded-[2.5rem] relative group overflow-hidden">
+                <div className={`glass-card ${isIntegrityVerified ? 'bg-emerald-50/50 border-emerald-100/50' : 'bg-rose-50/50 border-rose-100/50'} p-8 rounded-[2.5rem] relative group overflow-hidden`}>
                     <div className="absolute top-0 right-0 w-24 h-24 bg-white/20 rounded-full -mr-12 -mt-12 blur-2xl group-hover:scale-150 transition-transform duration-1000"></div>
-                    <p className="text-[9px] font-black text-rose-500 uppercase tracking-[0.3em] mb-3">Integrity Status</p>
+                    <p className={`text-[9px] font-black ${isIntegrityVerified ? 'text-emerald-600' : 'text-rose-500'} uppercase tracking-[0.3em] mb-3`}>Integrity Status</p>
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-white shadow-xl flex items-center justify-center text-rose-600 border border-white">
-                            <Lock className="w-5 h-5" />
+                        <div className={`w-10 h-10 rounded-xl bg-white shadow-xl flex items-center justify-center ${isIntegrityVerified ? 'text-emerald-600' : 'text-rose-600'} border border-white`}>
+                            {isIntegrityVerified ? <ShieldCheck className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
                         </div>
-                        <span className="text-lg font-black text-slate-900 tracking-tight uppercase">Audited</span>
+                        <span className="text-lg font-black text-slate-900 tracking-tight uppercase">
+                            {isIntegrityVerified ? 'Verified' : 'Action Req.'}
+                        </span>
                     </div>
                 </div>
                 <div className="glass-card bg-amber-50/50 border-amber-100/50 p-8 rounded-[2.5rem] relative group overflow-hidden">
@@ -114,10 +159,10 @@ export const NarcoticsLockbox: React.FC<NarcoticsLockboxProps> = ({ settings, cu
                         <span className="text-[10px] font-black text-slate-400 uppercase pb-1.5 tracking-widest">Logs Recorded</span>
                     </div>
                 </div>
-                <div className="glass-card bg-emerald-50/50 border-emerald-100/50 p-8 rounded-[2.5rem] relative group overflow-hidden">
-                    <p className="text-[9px] font-black text-emerald-600 uppercase tracking-[0.3em] mb-3">Variance Alerts</p>
+                <div className={`glass-card ${isIntegrityVerified ? 'bg-emerald-50/50 border-emerald-100/50' : 'bg-rose-50/50 border-rose-100/50'} p-8 rounded-[2.5rem] relative group overflow-hidden`}>
+                    <p className={`text-[9px] font-black ${isIntegrityVerified ? 'text-emerald-600' : 'text-rose-600'} uppercase tracking-[0.3em] mb-3`}>Variance Alerts</p>
                     <div className="flex items-end gap-2">
-                        <span className="text-4xl font-black text-emerald-500 tracking-tighter">0</span>
+                        <span className={`text-4xl font-black ${isIntegrityVerified ? 'text-emerald-500' : 'text-rose-500'} tracking-tighter`}>{discrepancyCount}</span>
                         <span className="text-[10px] font-black text-slate-400 uppercase pb-1.5 tracking-widest">Discrepancies</span>
                     </div>
                 </div>

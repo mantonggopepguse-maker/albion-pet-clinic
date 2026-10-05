@@ -198,27 +198,47 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
         const limit = Number(req.query.limit) || 50;
         const skip = (page - 1) * limit;
 
-        const clients = await prisma.client.findMany({
-            where: req.user?.isSuperAdmin ? {} : { clinicId: req.user?.clinicId as string },
-            take: limit,
-            skip,
-            orderBy: { createdAt: 'desc' },
-            include: {
-                portalInvites: {
-                    orderBy: { createdAt: 'desc' },
-                    take: 1,
-                },
-                _count: {
-                    select: {
-                        aiConversations: {
-                            where: { platform: 'PORTAL' },
+        const where = req.user?.isSuperAdmin ? {} : { clinicId: req.user?.clinicId as string };
+        const [clients, total] = await Promise.all([
+            prisma.client.findMany({
+                where,
+                take: limit,
+                skip,
+                orderBy: { createdAt: 'desc' },
+                include: {
+                    portalInvites: {
+                        orderBy: { createdAt: 'desc' },
+                        take: 1,
+                    },
+                    _count: {
+                        select: {
+                            aiConversations: {
+                                where: { platform: 'PORTAL' },
+                            },
                         },
                     },
                 },
-            },
-        });
+            }),
+            prisma.client.count({ where }),
+        ]);
 
-        res.json(clients.map(withPortalAccess));
+        res.set('X-Total-Count', String(total));
+        res.set('X-Page', String(page));
+        res.set('X-Limit', String(limit));
+        res.set('X-Total-Pages', String(Math.ceil(total / limit)));
+
+        const mappedClients = clients.map(withPortalAccess);
+        if (req.query.includeTotal === 'true') {
+            return res.json({
+                data: mappedClients,
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+            });
+        }
+
+        res.json(mappedClients);
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch clients' });
     }

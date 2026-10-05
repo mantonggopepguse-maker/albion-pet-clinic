@@ -33,29 +33,49 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
         const limit = Number(req.query.limit) || 50;
         const skip = (page - 1) * limit;
 
-        const patients = await prisma.patient.findMany({
-            where: req.user?.isSuperAdmin ? {} : { owner: { clinicId: req.user?.clinicId as string } },
-            select: {
-                id: true,
-                name: true,
-                species: true,
-                breed: true,
-                gender: true,
-                age: true,
-                dateOfBirth: true,
-                weight: true,
-                ownerId: true,
-                owner: {
-                    select: {
-                        firstName: true,
-                        lastName: true
+        const where = req.user?.isSuperAdmin ? {} : { owner: { clinicId: req.user?.clinicId as string } };
+        const [patients, total] = await Promise.all([
+            prisma.patient.findMany({
+                where,
+                select: {
+                    id: true,
+                    name: true,
+                    species: true,
+                    breed: true,
+                    gender: true,
+                    age: true,
+                    dateOfBirth: true,
+                    weight: true,
+                    ownerId: true,
+                    owner: {
+                        select: {
+                            firstName: true,
+                            lastName: true
+                        }
                     }
-                }
-            },
-            take: limit,
-            skip: skip,
-            orderBy: { createdAt: 'desc' }
-        });
+                },
+                take: limit,
+                skip: skip,
+                orderBy: { createdAt: 'desc' }
+            }),
+            prisma.patient.count({ where }),
+        ]);
+
+        res.set('X-Total-Count', String(total));
+        res.set('X-Page', String(page));
+        res.set('X-Limit', String(limit));
+        res.set('X-Total-Pages', String(Math.ceil(total / limit)));
+
+        if (req.query.includeTotal === 'true') {
+            return res.json({
+                data: patients,
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+            });
+        }
+
         res.json(patients);
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch patients' });
